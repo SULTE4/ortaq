@@ -30,6 +30,9 @@ func main() {
 	if e = os.MkdirAll(dir, 0755); e != nil {
 		log.Fatal(e)
 	}
+	if e = app.SeedImages(dir); e != nil {
+		log.Fatal(e)
+	}
 	api := &app.API{Store: store, Secret: []byte(secret), UploadDir: dir, Now: time.Now, Demo: os.Getenv("DEMO_MODE") == "true"}
 	srv := &http.Server{Addr: ":8080", Handler: api.Handler(), ReadHeaderTimeout: 5 * time.Second, IdleTimeout: 60 * time.Second}
 	go func() {

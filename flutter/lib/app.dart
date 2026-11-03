@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'api.dart';
+import 'package:file_picker/file_picker.dart';
 import 'strings_resident.dart';
 import 'strings_admin.dart';
 part 'building.dart';
+part 'reports.dart';
 const navy=Color(0xFF102B4E), blue=Color(0xFF3269ED), paper=Color(0xFFF4F6FA), muted=Color(0xFF718096);
 class OrtaqApp extends StatelessWidget {
  final bool admin; const OrtaqApp({super.key,required this.admin});
@@ -12,20 +14,21 @@ class OrtaqApp extends StatelessWidget {
 class Workspace extends StatefulWidget {final bool admin;const Workspace({super.key,required this.admin});@override State<Workspace> createState()=>_WorkspaceState();}
 class _WorkspaceState extends State<Workspace>{
  final api=Api(); final phone=TextEditingController(text:'+77000000012'), code=TextEditingController(text:'1234'), invite=TextEditingController(text:'ORTAQ-045'), name=TextEditingController();
- Map<String,dynamic>? me,building;String page='home',error='';bool busy=false,requested=false;Timer? timer;
+ Map<String,dynamic> data={}; Map<String,dynamic>? me,building;String page='home',error='';bool busy=false,requested=false;Timer? timer;
  Map<String,String> get s=>widget.admin?adminStrings:residentStrings;
  @override void initState(){super.initState();if(widget.admin)phone.text='+77000000001';}
  @override void dispose(){timer?.cancel();phone.dispose();code.dispose();invite.dispose();name.dispose();super.dispose();}
  Future<void> action(Future<void> Function() f)async{if(busy)return;setState((){busy=true;error='';});try{await f();}catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('Exception: ',''));}finally{if(mounted)setState(()=>busy=false);}}
- Future<void> login()async{final v=await api.request('/auth/verify',method:'POST',body:{'phone':phone.text,'code':code.text,'invite':invite.text,'name':name.text});final u=Map<String,dynamic>.from(v['user']);if(widget.admin&&u['role']=='resident')throw Exception('Use a chairman or accountant account for this workspace.');if(!widget.admin&&u['role']!='resident')throw Exception('Use a resident account in the resident app.');api.token=v['token'];final b=await api.request('/building');setState((){me=u;building=Map<String,dynamic>.from(b);});}
+ Future<void> login()async{final v=await api.request('/auth/verify',method:'POST',body:{'phone':phone.text,'code':code.text,'invite':invite.text,'name':name.text});final u=Map<String,dynamic>.from(v['user']);if(widget.admin&&u['role']=='resident')throw Exception('Use a chairman or accountant account for this workspace.');if(!widget.admin&&u['role']!='resident')throw Exception('Use a resident account in the resident app.');api.token=v['token'];final b=await api.request('/building');setState((){me=u;building=Map<String,dynamic>.from(b);});await refresh();timer?.cancel();timer=Timer.periodic(const Duration(seconds:3),(_){if(me!=null&&!busy)refresh();});}
  Widget text(String value,{double size=14,Color color=navy,FontWeight weight=FontWeight.normal})=>Text(value,style:TextStyle(fontSize:size,color:color,fontWeight:weight,height:1.35));
  Widget card(Widget child,{Color color=Colors.white})=>Container(width:double.infinity,padding:const EdgeInsets.all(22),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(20),border:Border.all(color:const Color(0xFFE4E9F1))),child:child);
  Widget field(TextEditingController c,String label,{int lines=1})=>Padding(padding:const EdgeInsets.only(bottom:14),child:TextField(controller:c,maxLines:lines,decoration:InputDecoration(labelText:label)));
  Widget button(String label,VoidCallback onPressed,{IconData? icon})=>FilledButton(onPressed:busy?null:onPressed,child:Row(mainAxisSize:MainAxisSize.min,children:[if(icon!=null)...[Icon(icon,size:18),const SizedBox(width:8)],Text(label)]));
  Widget loginView()=>Center(child:SingleChildScrollView(padding:const EdgeInsets.all(28),child:SizedBox(width:390,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text('ortaq',size:42,weight:FontWeight.w800),const SizedBox(height:10),text(widget.admin?'THE MANAGEMENT WORKSPACE':'YOUR BUILDING, CONNECTED',size:10,color:blue,weight:FontWeight.w700),const SizedBox(height:44),text(s['login']!,size:32,weight:FontWeight.w700),const SizedBox(height:12),text(s['subtitle']!,color:muted),const SizedBox(height:30),field(phone,'Phone number'),if(requested)...[field(code,'Demo OTP · 1234'),if(!widget.admin)...[field(invite,'Apartment invite · new residents'),field(name,'Your name · new residents')]],button(requested?'Enter Ortaq':'Get demo code',()=>action(()async{if(requested){await login();}else{await api.request('/auth/otp',method:'POST',body:{'phone':phone.text});setState(()=>requested=true);}}),icon:Icons.arrow_forward),const SizedBox(height:26),text(widget.admin?'Chairman  +77000000001\nAccountant  +77000000002':'Demo resident  +77000000012  ·  Apartment 45',size:12,color:muted),if(error.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:text(error,color:Colors.red))]))));
- List<String> get pages=>['home',if(widget.admin&&me?['role']=='chairman')'building'];
+ Future<void> refresh()async{try{final v=await api.request('/snapshot');if(mounted&&me!=null)setState(()=>data=Map<String,dynamic>.from(v));}catch(e){if(mounted)setState(()=>error='Connection interrupted. Please refresh or sign in again.');}}
+ List<String> get pages=>['home','reports',if(widget.admin&&me?['role']=='chairman')'building'];
  Widget home()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text(s['welcome']!,size:28,weight:FontWeight.w700),const SizedBox(height:12),text(building?['name']??'',size:17),text(building?['address']??'',color:muted),const SizedBox(height:24),card(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.apartment,size:48,color:blue),const SizedBox(height:20),text(widget.admin?'120 homes. One community.':'This is your place.',size:24,weight:FontWeight.w700),text(widget.admin?'3 entrances · 9 floors · Astana':'Apartment ${me?['apartment']} · ${me?['name']}',color:muted)]))]);
- Widget content()=>page=='building'?buildingView():home();
+ Widget content()=>page=='building'?buildingView():page=='reports'?reportsView():home();
  @override Widget build(BuildContext context){
  final inner=me==null?loginView():Column(children:[Container(padding:const EdgeInsets.symmetric(horizontal:24,vertical:18),color:Colors.white,child:Row(children:[text('ortaq',size:28,weight:FontWeight.w800),const Spacer(),text(widget.admin?'${me!['role']}'.toUpperCase():'APT ${me!['apartment']}',size:11,color:blue,weight:FontWeight.w700),IconButton(tooltip:'Sign out',onPressed:(){setState((){me=null;api.token='';requested=false;page='home';});},icon:const Icon(Icons.logout,size:19))])),Expanded(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Column(children:[if(error.isNotEmpty)card(text(error,color:Colors.red)),content()]))),if(pages.length>1)SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:pages.map((p)=>TextButton(onPressed:()=>setState(()=>page=p),child:Text(s[p]??p))).toList()))]);
  return Scaffold(body:widget.admin?inner:Center(child:Container(width:430,margin:const EdgeInsets.symmetric(vertical:18),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:paper,borderRadius:BorderRadius.circular(34),border:Border.all(color:navy,width:7),boxShadow:[BoxShadow(color:navy.withValues(alpha:.15),blurRadius:60,offset:const Offset(0,20))]),child:inner)));

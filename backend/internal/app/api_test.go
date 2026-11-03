@@ -11,7 +11,11 @@ import (
 
 func testAPI(t *testing.T) *API {
 	t.Helper()
-	return &API{Store: NewMemory(Seed(time.Now())), Secret: []byte("a-test-secret-with-at-least-32-bytes"), UploadDir: t.TempDir(), Now: time.Now, Demo: true}
+	dir := t.TempDir()
+	if e := SeedImages(dir); e != nil {
+		t.Fatal(e)
+	}
+	return &API{Store: NewMemory(Seed(time.Now())), Secret: []byte("a-test-secret-with-at-least-32-bytes"), UploadDir: dir, Now: time.Now, Demo: true}
 }
 func call(t *testing.T, a *API, method, path, body string, u int) (int, map[string]any) {
 	t.Helper()
