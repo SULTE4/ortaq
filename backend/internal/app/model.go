@@ -39,7 +39,7 @@ func Seed(now time.Time) *State {
 	return &State{
 		Buildings: []Building{{1, "ЖК Ortaq Demo", "Kabanbay Batyr Ave 60, Astana", 3, 9, 120}},
 		Users:     []User{{1, "+77000000001", "Aigerim S.", "chairman", 1, 0}, {2, "+77000000002", "Daniyar K.", "accountant", 1, 0}, {3, "+77000000011", "Amina T.", "resident", 1, 12}, {4, "+77000000012", "Arman B.", "resident", 1, 45}, {5, "+77000000013", "Dana M.", "resident", 1, 87}},
-		Invites:   []Invite{{"ORTAQ-012", 1, 12, false}, {"ORTAQ-045", 1, 45, false}, {"ORTAQ-087", 1, 87, false}}, Challenges: map[string]Challenge{},
+		Invites:   seedInvites(), Challenges: map[string]Challenge{},
 	}
 }
 func (s *State) building(id int) Building {
