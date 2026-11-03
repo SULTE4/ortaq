@@ -29,6 +29,7 @@ type Challenge struct {
 	Attempts int       `json:"attempts"`
 }
 type State struct {
+	Issues     []Issue              `json:"issues"`
 	Reports    []Report             `json:"reports"`
 	Users      []User               `json:"users"`
 	Buildings  []Building           `json:"buildings"`
@@ -38,6 +39,7 @@ type State struct {
 
 func Seed(now time.Time) *State {
 	return &State{
+		Issues:    seedIssues(now),
 		Reports:   seedReports(now),
 		Buildings: []Building{{1, "ЖК Ortaq Demo", "Kabanbay Batyr Ave 60, Astana", 3, 9, 120}},
 		Users:     []User{{1, "+77000000001", "Aigerim S.", "chairman", 1, 0}, {2, "+77000000002", "Daniyar K.", "accountant", 1, 0}, {3, "+77000000011", "Amina T.", "resident", 1, 12}, {4, "+77000000012", "Arman B.", "resident", 1, 45}, {5, "+77000000013", "Dana M.", "resident", 1, 87}},
