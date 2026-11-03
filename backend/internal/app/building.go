@@ -27,7 +27,7 @@ func (a *API) buildingRoutes(m *http.ServeMux) {
 				}
 			}
 			for n := 1; n <= in.Apartments; n++ {
-				s.Invites = append(s.Invites, Invite{ID(), in.ID, n, false})
+				s.Invites = append(s.Invites, Invite{strings.ToUpper(ID()), in.ID, n, false})
 			}
 			return nil
 		})

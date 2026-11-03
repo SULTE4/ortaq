@@ -149,7 +149,7 @@ The screenshots use the compiled applications and seeded API fixtures:
 
 ## Story commit history
 
-The authoring runner mounts an empty `.git` directory read-only. Real local commits are therefore retained in **`.history.git`**, with one commit per requested story, in order, each subject starting with its story ID.
+The authoring runner mounts an empty `.git` directory read-only. Real local commits are therefore retained in **`.history.git`**, with one commit per requested story, in order, each subject starting with its story ID. Any final validation fixes follow those story commits.
 
 ```sh
 ./scripts/git log --oneline
