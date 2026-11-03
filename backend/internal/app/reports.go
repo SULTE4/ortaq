@@ -147,7 +147,7 @@ func (a *API) reportRoutes(m *http.ServeMux) {
 }
 func (a *API) snapshot(w http.ResponseWriter, r *http.Request, u User) error {
 	return a.Store.View(r.Context(), func(s *State) error {
-		data := map[string]any{"me": u, "building": s.building(u.BuildingID), "notifications": s.notificationsFor(u), "issues": s.issuesFor(u.BuildingID), "reports": s.reportsFor(u.BuildingID)}
+		data := map[string]any{"me": u, "building": s.building(u.BuildingID), "announcements": s.announcementsFor(u.BuildingID), "notifications": s.notificationsFor(u), "issues": s.issuesFor(u.BuildingID), "reports": s.reportsFor(u.BuildingID)}
 		send(w, 200, data)
 		return nil
 	})
