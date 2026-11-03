@@ -273,6 +273,11 @@ func (a *API) verify(w http.ResponseWriter, r *http.Request, _ User) error {
 	send(w, 200, map[string]any{"token": a.token(u), "user": u})
 	return nil
 }
-func (a *API) routes(m *http.ServeMux) { a.buildingRoutes(m); a.reportRoutes(m); a.issueRoutes(m) }
+func (a *API) routes(m *http.ServeMux) {
+	a.buildingRoutes(m)
+	a.reportRoutes(m)
+	a.issueRoutes(m)
+	a.workflowRoutes(m)
+}
 
 var _ = fmt.Sprintf
