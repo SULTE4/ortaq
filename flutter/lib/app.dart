@@ -19,38 +19,484 @@ part 'balances.dart';
 part 'onboarding.dart';
 part 'dashboard.dart';
 part 'embed.dart';
-const navy=Color(0xFF102B4E), blue=Color(0xFF3269ED), paper=Color(0xFFF4F6FA), muted=Color(0xFF718096);
-class OrtaqApp extends StatelessWidget {
- final bool admin; const OrtaqApp({super.key,required this.admin});
- @override Widget build(BuildContext context)=>MaterialApp(debugShowCheckedModeBanner:false,title:'Ortaq',theme:ThemeData(useMaterial3:true,colorScheme:ColorScheme.fromSeed(seedColor:blue,primary:blue,surface:Colors.white),scaffoldBackgroundColor:paper,fontFamily:'Arial',textTheme:const TextTheme(headlineLarge:TextStyle(fontSize:32,fontWeight:FontWeight.w700,color:navy),headlineMedium:TextStyle(fontSize:25,fontWeight:FontWeight.w700,color:navy),titleLarge:TextStyle(fontSize:20,fontWeight:FontWeight.w700,color:navy),bodyMedium:TextStyle(fontSize:14,height:1.5,color:navy)),inputDecorationTheme:InputDecorationTheme(filled:true,fillColor:paper,border:OutlineInputBorder(borderSide:BorderSide.none,borderRadius:BorderRadius.circular(12))),filledButtonTheme:FilledButtonThemeData(style:FilledButton.styleFrom(padding:const EdgeInsets.symmetric(horizontal:22,vertical:20),shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(12))))),home:Workspace(admin:admin));
+
+const navy = Color(0xFF102B4E),
+    blue = Color(0xFF3269ED),
+    paper = Color(0xFFF4F6FA),
+    muted = Color(0xFF718096);
+bool adminCopy = false;
+String copy(String key, [List<Object?> values = const []]) {
+  var value = (adminCopy ? adminStrings : residentStrings)[key] ?? key;
+  for (var i = 0; i < values.length; i++) {
+    value = value.replaceAll('{$i}', '${values[i]}');
+  }
+  return value;
 }
-class Workspace extends StatefulWidget {final bool admin;const Workspace({super.key,required this.admin});@override State<Workspace> createState()=>_WorkspaceState();}
-class _WorkspaceState extends State<Workspace>{
- final api=Api(); final phone=TextEditingController(text:'+77000000012'), code=TextEditingController(text:'1234'), invite=TextEditingController(text:'ORTAQ-045'), name=TextEditingController();
- Map<String,dynamic> data={}; Map<String,dynamic>? me,building;String page='home',error='';bool busy=false,requested=false,guide=false,prefsReady=false;Timer? timer;
- Map<String,String> get s=>widget.admin?adminStrings:residentStrings;
- @override void initState(){super.initState();if(widget.admin)phone.text='+77000000001';loadPreferences();}
- @override void dispose(){timer?.cancel();phone.dispose();code.dispose();invite.dispose();name.dispose();super.dispose();}
- Future<void> action(Future<void> Function() f)async{if(busy)return;setState((){busy=true;error='';});try{await f();}catch(e){if(mounted)setState(()=>error=e.toString().replaceFirst('Exception: ',''));}finally{if(mounted)setState(()=>busy=false);}}
- Future<void> login()async{final v=await api.request('/auth/verify',method:'POST',body:{'phone':phone.text,'code':code.text,'invite':invite.text,'name':name.text});final u=Map<String,dynamic>.from(v['user']);if(widget.admin&&u['role']=='resident')throw Exception('Use a chairman or accountant account for this workspace.');if(!widget.admin&&u['role']!='resident')throw Exception('Use a resident account in the resident app.');api.token=v['token'];final b=await api.request('/building');setState((){me=u;building=Map<String,dynamic>.from(b);});await refresh();timer?.cancel();timer=Timer.periodic(const Duration(seconds:3),(_){if(me!=null&&!busy)refresh();});}
- Widget text(String value,{double size=14,Color color=navy,FontWeight weight=FontWeight.normal})=>Text(value,style:TextStyle(fontSize:size,color:color,fontWeight:weight,height:1.35));
- Widget card(Widget child,{Color color=Colors.white})=>Container(width:double.infinity,padding:const EdgeInsets.all(22),decoration:BoxDecoration(color:color,borderRadius:BorderRadius.circular(20),border:Border.all(color:const Color(0xFFE4E9F1))),child:child);
- Widget field(TextEditingController c,String label,{int lines=1})=>Padding(padding:const EdgeInsets.only(bottom:14),child:TextField(controller:c,maxLines:lines,decoration:InputDecoration(labelText:label)));
- Widget button(String label,VoidCallback onPressed,{IconData? icon})=>FilledButton(onPressed:busy?null:onPressed,child:Row(mainAxisSize:MainAxisSize.min,children:[if(icon!=null)...[Icon(icon,size:18),const SizedBox(width:8)],Text(label)]));
- Widget loginView()=>Center(child:SingleChildScrollView(padding:const EdgeInsets.all(28),child:SizedBox(width:390,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text('ortaq',size:42,weight:FontWeight.w800),const SizedBox(height:10),text(widget.admin?'THE MANAGEMENT WORKSPACE':'YOUR BUILDING, CONNECTED',size:10,color:blue,weight:FontWeight.w700),const SizedBox(height:44),text(s['login']!,size:32,weight:FontWeight.w700),const SizedBox(height:12),text(s['subtitle']!,color:muted),const SizedBox(height:30),field(phone,'Phone number'),if(requested)...[field(code,'Demo OTP · 1234'),if(!widget.admin)...[field(invite,'Apartment invite · new residents'),field(name,'Your name · new residents')]],button(requested?'Enter Ortaq':'Get demo code',()=>action(()async{if(requested){await login();}else{await api.request('/auth/otp',method:'POST',body:{'phone':phone.text});setState(()=>requested=true);}}),icon:Icons.arrow_forward),const SizedBox(height:26),text(widget.admin?'Chairman  +77000000001\nAccountant  +77000000002':'Demo resident  +77000000012  ·  Apartment 45',size:12,color:muted),if(error.isNotEmpty)Padding(padding:const EdgeInsets.only(top:16),child:text(error,color:Colors.red))]))));
- Future<void> refresh()async{try{final v=await api.request('/snapshot');if(mounted&&me!=null)setState(()=>data=Map<String,dynamic>.from(v));}catch(e){if(mounted)setState(()=>error='Connection interrupted. Please refresh or sign in again.');}}
- List<String> get pages=>['home','reports','issues','announcements','polls','balance','feedback',if(widget.admin)'3d',if(widget.admin&&me?['role']=='chairman')'building'];
- Widget content()=>page=='3d'?threeDView():page=='building'?buildingView():page=='reports'?reportsView():page=='issues'?issuesView():page=='announcements'?announcementsView():page=='polls'?pollsView():page=='balance'?balancesView():page=='feedback'?feedbackView():dashboard();
- IconData pageIcon(String p)=>{'home':Icons.grid_view_rounded,'reports':Icons.pie_chart_outline,'issues':Icons.handyman_outlined,'announcements':Icons.campaign_outlined,'polls':Icons.how_to_vote_outlined,'balance':Icons.account_balance_wallet_outlined,'building':Icons.apartment_outlined,'feedback':Icons.chat_bubble_outline,'3d':Icons.view_in_ar_outlined}[p]??Icons.circle_outlined;
- Widget sidebar()=>Container(width:228,color:navy,child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[Padding(padding:const EdgeInsets.fromLTRB(28,30,20,38),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text('ortaq',size:38,color:Colors.white,weight:FontWeight.w800),const SizedBox(height:5),text('COMMUNITY WORKSPACE',size:9,color:const Color(0xFF9CB5D2),weight:FontWeight.w600)])),Expanded(child:ListView(padding:const EdgeInsets.symmetric(horizontal:14),children:pages.map((p)=>Padding(padding:const EdgeInsets.only(bottom:7),child:ListTile(shape:RoundedRectangleBorder(borderRadius:BorderRadius.circular(12)),selected:page==p,selectedTileColor:Colors.white.withValues(alpha:.12),leading:Icon(pageIcon(p),color:page==p?Colors.white:const Color(0xFF9CB5D2),size:21),title:text(s[p]??p,color:page==p?Colors.white:const Color(0xFFB9C9DD),size:13,weight:page==p?FontWeight.w700:FontWeight.normal),onTap:()=>setState(()=>page=p)))).toList())),Padding(padding:const EdgeInsets.all(24),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text('Made for our shared home.',size:11,color:const Color(0xFF9CB5D2)),const SizedBox(height:12),text('ASTANA  /  RELEASE 01',size:9,color:const Color(0xFF6F8BAD),weight:FontWeight.w600)]))]));
- Widget topbar()=>Container(height:80,padding:const EdgeInsets.symmetric(horizontal:24),color:Colors.white,child:Row(children:[if(!widget.admin)text('ortaq',size:30,weight:FontWeight.w800)else Expanded(child:Column(mainAxisAlignment:MainAxisAlignment.center,crossAxisAlignment:CrossAxisAlignment.start,children:[text(building?['name']??'Ortaq',weight:FontWeight.w700),text(building?['address']??'',size:11,color:muted)])),if(!widget.admin)const Spacer(),if(!widget.admin)text('APT ${me?['apartment']}',size:10,color:blue,weight:FontWeight.w700),notificationBell(),const SizedBox(width:6),if(widget.admin)CircleAvatar(backgroundColor:const Color(0xFFEDF2FF),radius:18,child:text(me?['name']?.substring(0,1)??'A',color:blue,weight:FontWeight.w700)),IconButton(tooltip:'Sign out',onPressed:(){setState((){me=null;data={};api.token='';requested=false;page='home';timer?.cancel();});},icon:const Icon(Icons.logout,size:18,color:muted))]));
- Widget residentNav()=>Container(color:Colors.white,padding:const EdgeInsets.only(top:7,bottom:10),child:Row(children:['home','reports','issues','announcements'].map((p)=>Expanded(child:InkWell(onTap:()=>setState(()=>page=p),child:Padding(padding:const EdgeInsets.symmetric(vertical:6),child:Column(mainAxisSize:MainAxisSize.min,children:[Icon(pageIcon(p),color:page==p?blue:muted,size:22),const SizedBox(height:4),text(s[p]??p,size:9,color:page==p?blue:muted,weight:FontWeight.w600)]))))).toList()));
- @override Widget build(BuildContext context){
- Widget inner;
- if(!prefsReady){inner=const Center(child:CircularProgressIndicator());}else if(guide){inner=guideView();}else if(me==null){inner=widget.admin?Row(children:[Expanded(child:Container(color:navy,child:Center(child:Padding(padding:const EdgeInsets.all(60),child:Column(mainAxisSize:MainAxisSize.min,crossAxisAlignment:CrossAxisAlignment.start,children:[text('Care is what makes\na building a home.',size:48,color:Colors.white,weight:FontWeight.w700),const SizedBox(height:28),text('TRANSPARENT MONEY. VISIBLE PROGRESS. SHARED DECISIONS.',size:11,color:const Color(0xFF9CB5D2)),const SizedBox(height:44),const SizedBox(height:230,width:400,child:CustomPaint(painter:_BuildingArt()))]))))),Expanded(child:loginView())]):loginView();}else{
- final main=Column(children:[topbar(),if(busy)const LinearProgressIndicator(minHeight:2),Expanded(child:SingleChildScrollView(padding:EdgeInsets.all(widget.admin?32:22),child:Align(alignment:Alignment.topCenter,child:ConstrainedBox(constraints:const BoxConstraints(maxWidth:1400),child:Column(crossAxisAlignment:CrossAxisAlignment.start,children:[if(error.isNotEmpty)Padding(padding:const EdgeInsets.only(bottom:16),child:card(Row(children:[const Icon(Icons.info_outline,color:Colors.red),const SizedBox(width:10),Expanded(child:text(error,color:Colors.red)),IconButton(tooltip:'Dismiss error',onPressed:()=>setState(()=>error=''),icon:const Icon(Icons.close))]))),content()]))))),if(!widget.admin)residentNav()]);
- inner=widget.admin?Row(children:[sidebar(),Expanded(child:main)]):main;
- }
- return Scaffold(body:widget.admin?inner:Center(child:Container(width:430,margin:MediaQuery.sizeOf(context).width>500?const EdgeInsets.symmetric(vertical:14):EdgeInsets.zero,clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:paper,borderRadius:BorderRadius.circular(34),border:Border.all(color:navy,width:7),boxShadow:[BoxShadow(color:navy.withValues(alpha:.15),blurRadius:60,offset:const Offset(0,20))]),child:inner)));
- }
+
+class OrtaqApp extends StatelessWidget {
+  final bool admin;
+  const OrtaqApp({super.key, required this.admin});
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Ortaq',
+      theme: ThemeData(
+          useMaterial3: true,
+          colorScheme: ColorScheme.fromSeed(
+              seedColor: blue, primary: blue, surface: Colors.white),
+          scaffoldBackgroundColor: paper,
+          fontFamily: 'OrtaqSans',
+          textTheme: const TextTheme(
+              headlineLarge: TextStyle(
+                  fontSize: 32, fontWeight: FontWeight.w700, color: navy),
+              headlineMedium: TextStyle(
+                  fontSize: 25, fontWeight: FontWeight.w700, color: navy),
+              titleLarge: TextStyle(
+                  fontSize: 20, fontWeight: FontWeight.w700, color: navy),
+              bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: navy)),
+          inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: paper,
+              border: OutlineInputBorder(
+                  borderSide: BorderSide.none,
+                  borderRadius: BorderRadius.circular(12))),
+          filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12))))),
+      home: Workspace(admin: admin));
+}
+
+class Workspace extends StatefulWidget {
+  final bool admin;
+  const Workspace({super.key, required this.admin});
+  @override
+  State<Workspace> createState() => _WorkspaceState();
+}
+
+class _WorkspaceState extends State<Workspace> {
+  final api = Api(copy);
+  final phone = TextEditingController(text: '+77000000012'),
+      code = TextEditingController(text: '1234'),
+      invite = TextEditingController(text: 'ORTAQ-045'),
+      name = TextEditingController();
+  Map<String, dynamic> data = {};
+  Map<String, dynamic>? me, building;
+  String page = 'home', error = '';
+  bool busy = false, requested = false, guide = false, prefsReady = false;
+  Timer? timer;
+  Map<String, String> get s => widget.admin ? adminStrings : residentStrings;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.admin) phone.text = '+77000000001';
+    loadPreferences();
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    phone.dispose();
+    code.dispose();
+    invite.dispose();
+    name.dispose();
+    super.dispose();
+  }
+
+  void updateView(VoidCallback change) {
+    if (mounted) setState(change);
+  }
+
+  Future<void> action(Future<void> Function() f) async {
+    if (busy) return;
+    setState(() {
+      busy = true;
+      error = '';
+    });
+    try {
+      await f();
+    } catch (e) {
+      if (mounted)
+        setState(() => error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
+  Future<void> login() async {
+    final v = await api.request('/auth/verify', method: 'POST', body: {
+      'phone': phone.text,
+      'code': code.text,
+      'invite': invite.text,
+      'name': name.text
+    });
+    final u = Map<String, dynamic>.from(v['user']);
+    if (widget.admin && u['role'] == 'resident') throw Exception(copy('ui175'));
+    if (!widget.admin && u['role'] != 'resident')
+      throw Exception(copy('ui176'));
+    api.token = v['token'];
+    final b = await api.request('/building');
+    setState(() {
+      me = u;
+      building = Map<String, dynamic>.from(b);
+    });
+    await refresh();
+    timer?.cancel();
+    timer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (me != null && !busy) refresh();
+    });
+  }
+
+  Widget text(String value,
+          {double size = 14,
+          Color color = navy,
+          FontWeight weight = FontWeight.normal}) =>
+      Text(value,
+          style: TextStyle(
+              fontSize: size, color: color, fontWeight: weight, height: 1.35));
+  Widget card(Widget child, {Color color = Colors.white}) => Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFE4E9F1))),
+      child: child);
+  Widget field(TextEditingController c, String label, {int lines = 1}) =>
+      Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: TextField(
+              controller: c,
+              maxLines: lines,
+              decoration: InputDecoration(labelText: label)));
+  Widget button(String label, VoidCallback onPressed, {IconData? icon}) =>
+      FilledButton(
+          onPressed: busy ? null : onPressed,
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            if (icon != null) ...[
+              Icon(icon, size: 18),
+              const SizedBox(width: 8)
+            ],
+            Text(label)
+          ]));
+  Widget loginView() => Center(
+      child: SingleChildScrollView(
+          padding: const EdgeInsets.all(28),
+          child: SizedBox(
+              width: 390,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    text(copy('ui001'), size: 42, weight: FontWeight.w800),
+                    const SizedBox(height: 10),
+                    text(widget.admin ? copy('ui177') : copy('ui178'),
+                        size: 10, color: blue, weight: FontWeight.w700),
+                    const SizedBox(height: 44),
+                    text(s['login']!, size: 32, weight: FontWeight.w700),
+                    const SizedBox(height: 12),
+                    text(s['subtitle']!, color: muted),
+                    const SizedBox(height: 30),
+                    field(phone, copy('ui179')),
+                    if (requested) ...[
+                      field(code, copy('ui180')),
+                      if (!widget.admin) ...[
+                        field(invite, copy('ui181')),
+                        field(name, copy('ui182'))
+                      ]
+                    ],
+                    button(
+                        requested ? copy('ui183') : copy('ui184'),
+                        () => action(() async {
+                              if (requested) {
+                                await login();
+                              } else {
+                                try {
+                                  await api.request('/auth/otp',
+                                      method: 'POST',
+                                      body: {'phone': phone.text});
+                                } on ApiError catch (e) {
+                                  if (e.status != 429) rethrow;
+                                }
+                                setState(() => requested = true);
+                              }
+                            }),
+                        icon: Icons.arrow_forward),
+                    const SizedBox(height: 26),
+                    text(widget.admin ? copy('ui185') : copy('ui186'),
+                        size: 12, color: muted),
+                    if (error.isNotEmpty)
+                      Padding(
+                          padding: const EdgeInsets.only(top: 16),
+                          child: text(error, color: Colors.red))
+                  ]))));
+  Future<void> refresh() async {
+    try {
+      final v = await api.request('/snapshot');
+      if (mounted && me != null)
+        setState(() => data = Map<String, dynamic>.from(v));
+    } catch (e) {
+      if (mounted) setState(() => error = copy('connection'));
+    }
+  }
+
+  List<String> get pages => [
+        'home',
+        'reports',
+        'issues',
+        'announcements',
+        'polls',
+        'balance',
+        'feedback',
+        if (widget.admin) '3d',
+        if (widget.admin && me?['role'] == 'chairman') 'building'
+      ];
+  Widget content() => page == '3d'
+      ? threeDView()
+      : page == 'building'
+          ? buildingView()
+          : page == 'reports'
+              ? reportsView()
+              : page == 'issues'
+                  ? issuesView()
+                  : page == 'announcements'
+                      ? announcementsView()
+                      : page == 'polls'
+                          ? pollsView()
+                          : page == 'balance'
+                              ? balancesView()
+                              : page == 'feedback'
+                                  ? feedbackView()
+                                  : dashboard();
+  IconData pageIcon(String p) =>
+      {
+        'home': Icons.grid_view_rounded,
+        'reports': Icons.pie_chart_outline,
+        'issues': Icons.handyman_outlined,
+        'announcements': Icons.campaign_outlined,
+        'polls': Icons.how_to_vote_outlined,
+        'balance': Icons.account_balance_wallet_outlined,
+        'building': Icons.apartment_outlined,
+        'feedback': Icons.chat_bubble_outline,
+        '3d': Icons.view_in_ar_outlined
+      }[p] ??
+      Icons.circle_outlined;
+  Widget sidebar() => Container(
+      width: 228,
+      color: navy,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Padding(
+            padding: const EdgeInsets.fromLTRB(28, 30, 20, 38),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              text(copy('ui001'),
+                  size: 38, color: Colors.white, weight: FontWeight.w800),
+              const SizedBox(height: 5),
+              text(copy('ui187'),
+                  size: 9,
+                  color: const Color(0xFF9CB5D2),
+                  weight: FontWeight.w600)
+            ])),
+        Expanded(
+            child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                children: pages
+                    .map((p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 7),
+                        child: ListTile(
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            selected: page == p,
+                            selectedTileColor:
+                                Colors.white.withValues(alpha: .12),
+                            leading: Icon(pageIcon(p),
+                                color: page == p
+                                    ? Colors.white
+                                    : const Color(0xFF9CB5D2),
+                                size: 21),
+                            title: text(s[p] ?? p,
+                                color: page == p
+                                    ? Colors.white
+                                    : const Color(0xFFB9C9DD),
+                                size: 13,
+                                weight: page == p
+                                    ? FontWeight.w700
+                                    : FontWeight.normal),
+                            onTap: () => setState(() => page = p))))
+                    .toList())),
+        Padding(
+            padding: const EdgeInsets.all(24),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              text(copy('ui188'), size: 11, color: const Color(0xFF9CB5D2)),
+              const SizedBox(height: 12),
+              text(copy('ui189'),
+                  size: 9,
+                  color: const Color(0xFF6F8BAD),
+                  weight: FontWeight.w600)
+            ]))
+      ]));
+  Widget topbar() => Container(
+      height: 80,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      color: Colors.white,
+      child: Row(children: [
+        if (!widget.admin)
+          text(copy('ui001'), size: 30, weight: FontWeight.w800)
+        else
+          Expanded(
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                text(building?['name'] ?? copy('ui190'),
+                    weight: FontWeight.w700),
+                text(building?['address'] ?? '', size: 11, color: muted)
+              ])),
+        if (!widget.admin) const Spacer(),
+        if (!widget.admin)
+          text(copy('ui191', [me?['apartment']]),
+              size: 10, color: blue, weight: FontWeight.w700),
+        notificationBell(),
+        const SizedBox(width: 6),
+        if (widget.admin)
+          CircleAvatar(
+              backgroundColor: const Color(0xFFEDF2FF),
+              radius: 18,
+              child: text(me?['name']?.substring(0, 1) ?? copy('ui192'),
+                  color: blue, weight: FontWeight.w700)),
+        IconButton(
+            tooltip: copy('ui195'),
+            onPressed: () {
+              setState(() {
+                me = null;
+                data = {};
+                api.token = '';
+                requested = false;
+                page = 'home';
+                timer?.cancel();
+              });
+            },
+            icon: const Icon(Icons.logout, size: 18, color: muted))
+      ]));
+  Widget residentNav() => Container(
+      color: Colors.white,
+      padding: const EdgeInsets.only(top: 7, bottom: 10),
+      child: Row(
+          children: ['home', 'reports', 'issues', 'announcements']
+              .map((p) => Expanded(
+                  child: InkWell(
+                      onTap: () => setState(() => page = p),
+                      child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child:
+                              Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(pageIcon(p),
+                                color: page == p ? blue : muted, size: 22),
+                            const SizedBox(height: 4),
+                            text(s[p] ?? p,
+                                size: 9,
+                                color: page == p ? blue : muted,
+                                weight: FontWeight.w600)
+                          ])))))
+              .toList()));
+  @override
+  Widget build(BuildContext context) {
+    Widget inner;
+    if (!prefsReady) {
+      inner = const Center(child: CircularProgressIndicator());
+    } else if (guide) {
+      inner = guideView();
+    } else if (me == null) {
+      inner = widget.admin
+          ? Row(children: [
+              Expanded(
+                  child: Container(
+                      color: navy,
+                      child: Center(
+                          child: Padding(
+                              padding: const EdgeInsets.all(60),
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    text(copy('ui193'),
+                                        size: 48,
+                                        color: Colors.white,
+                                        weight: FontWeight.w700),
+                                    const SizedBox(height: 28),
+                                    text(copy('ui194'),
+                                        size: 11,
+                                        color: const Color(0xFF9CB5D2)),
+                                    const SizedBox(height: 44),
+                                    const SizedBox(
+                                        height: 230,
+                                        width: 400,
+                                        child: CustomPaint(
+                                            painter: _BuildingArt()))
+                                  ]))))),
+              Expanded(child: loginView())
+            ])
+          : loginView();
+    } else {
+      final main = Column(children: [
+        topbar(),
+        if (busy) const LinearProgressIndicator(minHeight: 2),
+        Expanded(
+            child: SingleChildScrollView(
+                padding: EdgeInsets.all(widget.admin ? 32 : 22),
+                child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 1400),
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (error.isNotEmpty)
+                                Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: card(Row(children: [
+                                      const Icon(Icons.info_outline,
+                                          color: Colors.red),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                          child:
+                                              text(error, color: Colors.red)),
+                                      IconButton(
+                                          tooltip: copy('ui196'),
+                                          onPressed: () =>
+                                              setState(() => error = ''),
+                                          icon: const Icon(Icons.close))
+                                    ]))),
+                              content()
+                            ]))))),
+        if (!widget.admin) residentNav()
+      ]);
+      inner = widget.admin
+          ? Row(children: [sidebar(), Expanded(child: main)])
+          : main;
+    }
+    return Scaffold(
+        body: widget.admin
+            ? inner
+            : Center(
+                child: Container(
+                    width: 430,
+                    margin: MediaQuery.sizeOf(context).width > 500
+                        ? const EdgeInsets.symmetric(vertical: 14)
+                        : EdgeInsets.zero,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                        color: paper,
+                        borderRadius: BorderRadius.circular(34),
+                        border: Border.all(color: navy, width: 7),
+                        boxShadow: [
+                          BoxShadow(
+                              color: navy.withValues(alpha: .15),
+                              blurRadius: 60,
+                              offset: const Offset(0, 20))
+                        ]),
+                    child: inner)));
+  }
 }

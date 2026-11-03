@@ -9,3 +9,9 @@
 .playwright-cli/
 uploads/
 *.bundle
+
+**/*.tsbuildinfo
+**/__pycache__/
+
+.local-sdk/
+.playwright-mcp/

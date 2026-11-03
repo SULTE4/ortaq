@@ -21,7 +21,7 @@ services:
     ports: ["8080:8080"]
     volumes: [uploads:/uploads]
     depends_on:
-      postgres: {condition: service_healthy}
+      postgres: { condition: service_healthy }
     healthcheck:
       test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8080/health"]
       interval: 3s
@@ -31,25 +31,25 @@ services:
     build:
       context: .
       dockerfile: flutter/Dockerfile
-      args: {ENTRYPOINT: lib/main_resident.dart}
+      args: { ENTRYPOINT: lib/main_resident.dart }
     ports: ["8081:80"]
     depends_on:
-      api: {condition: service_healthy}
+      api: { condition: service_healthy }
   admin:
     build:
       context: .
       dockerfile: flutter/Dockerfile
-      args: {ENTRYPOINT: lib/main_admin.dart}
+      args: { ENTRYPOINT: lib/main_admin.dart }
     ports: ["8082:80"]
     depends_on:
-      api: {condition: service_healthy}
+      api: { condition: service_healthy }
   web3d:
     build:
       context: .
       dockerfile: web3d/Dockerfile
     ports: ["8083:80"]
     depends_on:
-      api: {condition: service_healthy}
+      api: { condition: service_healthy }
 volumes:
   postgres_data:
   uploads:

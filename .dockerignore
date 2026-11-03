@@ -9,3 +9,9 @@
 **/dist
 *.bundle
 uploads
+
+.local-sdk
+.playwright-mcp
+
+**/*.tsbuildinfo
+**/__pycache__

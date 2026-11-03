@@ -1,4 +1,7 @@
 #!/bin/sh
-# The runner mounts .git read-only; retain real story commits separately.
+# The authoring runner mounts .git read-only; ordinary clones use normal Git.
 cd "$(dirname "$0")/.." || exit 1
-exec git --git-dir=.history.git --work-tree=. "$@"
+if [ -d .history.git ]; then
+  exec git --git-dir=.history.git --work-tree=. "$@"
+fi
+exec git "$@"

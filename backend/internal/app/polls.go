@@ -83,7 +83,7 @@ func (a *API) pollRoutes(m *http.ServeMux) {
 			return forbidden()
 		}
 		var in struct {
-			Option int `json:"option"`
+			Option *int `json:"option"`
 		}
 		if e := decode(r, &in); e != nil {
 			return e
@@ -97,7 +97,7 @@ func (a *API) pollRoutes(m *http.ServeMux) {
 				if !a.Now().Before(p.ClosesAt) {
 					return failure{409, "This advisory poll has closed"}
 				}
-				if in.Option < 0 || in.Option >= len(p.Options) {
+				if in.Option == nil || *in.Option < 0 || *in.Option >= len(p.Options) {
 					return bad("Choose a valid option")
 				}
 				for _, v := range p.Votes {
@@ -105,7 +105,7 @@ func (a *API) pollRoutes(m *http.ServeMux) {
 						return failure{409, "Your apartment has already voted"}
 					}
 				}
-				p.Votes = append(p.Votes, Vote{u.Apartment, in.Option})
+				p.Votes = append(p.Votes, Vote{u.Apartment, *in.Option})
 				return nil
 			}
 			return notFound()

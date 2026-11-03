@@ -15,7 +15,7 @@ func testAPI(t *testing.T) *API {
 	if e := SeedImages(dir); e != nil {
 		t.Fatal(e)
 	}
-	return &API{Store: NewMemory(Seed(time.Now())), Secret: []byte("a-test-secret-with-at-least-32-bytes"), UploadDir: dir, Now: time.Now, Demo: true}
+	return &API{Store: NewMemory(Seed(time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC))), Secret: []byte("a-test-secret-with-at-least-32-bytes"), UploadDir: dir, Now: func() time.Time { return time.Date(2026, 11, 3, 12, 0, 0, 0, time.UTC) }, Demo: true}
 }
 func call(t *testing.T, a *API, method, path, body string, u int) (int, map[string]any) {
 	t.Helper()
@@ -52,7 +52,8 @@ func TestAuth(t *testing.T) {
 	if _, e = a.identity(context.Background(), token+"x"); e == nil {
 		t.Fatal("forged token accepted")
 	}
-	a.Now = func() time.Time { return time.Now().Add(13 * time.Hour) }
+	before := a.Now()
+	a.Now = func() time.Time { return before.Add(13 * time.Hour) }
 	if _, e = a.identity(context.Background(), token); e == nil {
 		t.Fatal("expired token accepted")
 	}

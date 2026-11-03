@@ -53,6 +53,8 @@ func (p *Postgres) View(ctx context.Context, f func(*State) error) error {
 	}
 	return f(&s)
 }
+
+// shortcut: the demo serializes all writes in one aggregate; split tables before scaling beyond the demo.
 func (p *Postgres) Update(ctx context.Context, f func(*State) error) error {
 	tx, e := p.Pool.Begin(ctx)
 	if e != nil {

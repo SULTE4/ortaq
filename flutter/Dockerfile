@@ -1,10 +1,10 @@
 FROM ghcr.io/cirruslabs/flutter:3.35.7 AS build
 WORKDIR /app
-COPY flutter/pubspec.yaml ./
+COPY flutter/pubspec.yaml flutter/pubspec.lock ./
 RUN flutter pub get
 COPY flutter/ ./
 ARG ENTRYPOINT=lib/main_resident.dart
-RUN flutter build web --release --target=$ENTRYPOINT --no-web-resources-cdn
+RUN flutter build web --release --target=$ENTRYPOINT --no-web-resources-cdn --no-wasm-dry-run
 FROM nginx:1.28-alpine
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /app/build/web /usr/share/nginx/html
