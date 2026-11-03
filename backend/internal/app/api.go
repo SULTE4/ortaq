@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -283,6 +282,5 @@ func (a *API) routes(m *http.ServeMux) {
 	a.announcementRoutes(m)
 	a.pollRoutes(m)
 	a.balanceRoutes(m)
+	a.feedbackRoutes(m)
 }
-
-var _ = fmt.Sprintf

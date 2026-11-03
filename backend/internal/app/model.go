@@ -29,6 +29,7 @@ type Challenge struct {
 	Attempts int       `json:"attempts"`
 }
 type State struct {
+	Feedback      []Feedback           `json:"feedback"`
 	Balances      []Balance            `json:"balances"`
 	Polls         []Poll               `json:"polls"`
 	Announcements []Announcement       `json:"announcements"`
