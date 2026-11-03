@@ -1,0 +1,4 @@
+#!/bin/sh
+# The runner mounts .git read-only; retain real story commits separately.
+cd "$(dirname "$0")/.." || exit 1
+exec git --git-dir=.history.git --work-tree=. "$@"

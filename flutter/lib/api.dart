@@ -1,0 +1,15 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+class Api {
+ String token = '';
+ final String base = '${Uri.base.origin}/api';
+ Future<dynamic> request(String path, {String method='GET', dynamic body}) async {
+  final req = http.Request(method, Uri.parse('$base$path'));
+  req.headers.addAll({'Content-Type':'application/json', if(token.isNotEmpty) 'Authorization':'Bearer $token'});
+  if(body!=null) req.body=jsonEncode(body);
+  final res=await http.Response.fromStream(await req.send());
+  dynamic value; try { value=jsonDecode(res.body); } catch (_) { throw Exception('The service is unavailable. Please try again.'); }
+  if(res.statusCode>=400) throw Exception(value['error']??'Request failed');
+  return value;
+ }
+}

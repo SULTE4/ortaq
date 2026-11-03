@@ -1,0 +1,11 @@
+.history.git/
+.env
+**/node_modules/
+**/dist/
+**/build/
+**/.dart_tool/
+**/.flutter-plugins*
+**/coverage/
+.playwright-cli/
+uploads/
+*.bundle

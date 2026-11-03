@@ -1,0 +1,11 @@
+.git
+.history.git
+.agents
+.codex
+.aws
+**/node_modules
+**/build
+**/.dart_tool
+**/dist
+*.bundle
+uploads

@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ortaq
+      POSTGRES_USER: ortaq
+      POSTGRES_PASSWORD: ortaq_demo
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U ortaq -d ortaq"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://ortaq:ortaq_demo@postgres:5432/ortaq?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-ortaq-university-demo-signing-secret-change-for-production}
+      DEMO_MODE: "true"
+      UPLOAD_DIR: /uploads
+    ports: ["8080:8080"]
+    volumes: [uploads:/uploads]
+    depends_on:
+      postgres: {condition: service_healthy}
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1:8080/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+  resident:
+    build:
+      context: .
+      dockerfile: flutter/Dockerfile
+      args: {ENTRYPOINT: lib/main_resident.dart}
+    ports: ["8081:80"]
+    depends_on:
+      api: {condition: service_healthy}
+  admin:
+    build:
+      context: .
+      dockerfile: flutter/Dockerfile
+      args: {ENTRYPOINT: lib/main_admin.dart}
+    ports: ["8082:80"]
+    depends_on:
+      api: {condition: service_healthy}
+  web3d:
+    build:
+      context: .
+      dockerfile: web3d/Dockerfile
+    ports: ["8083:80"]
+    depends_on:
+      api: {condition: service_healthy}
+volumes:
+  postgres_data:
+  uploads:
