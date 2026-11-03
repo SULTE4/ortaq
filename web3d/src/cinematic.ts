@@ -65,3 +65,7 @@ export function cameraAt(time: number): { position: Vec3; target: Vec3 } {
 export function scriptVotes(time: number): number {
   return time < 70 ? 0 : Math.min(100, Math.floor((time - 70) * 14));
 }
+
+export function scriptVotedApartments(time: number): number[] {
+  return Array.from({ length: scriptVotes(time) }, (_, i) => i + 1);
+}

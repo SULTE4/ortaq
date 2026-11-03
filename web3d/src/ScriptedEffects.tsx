@@ -98,7 +98,7 @@ export function ScriptedEffects() {
       </mesh>
       {time >= 40 && time < 50 && (
         <Html position={[0, 8.4, 3.2]} center>
-          <div className="resolved-label">✓ {C.resolved}</div>
+          <div className="resolved-label">{C.resolved}</div>
         </Html>
       )}
       {time >= 70 && time < 80 && (

@@ -15,3 +15,5 @@ uploads
 
 **/*.tsbuildinfo
 **/__pycache__
+
+.taste-skill

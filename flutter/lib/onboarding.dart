@@ -24,14 +24,14 @@ extension OnboardingUI on _WorkspaceState {
             height: 190,
             width: double.infinity,
             decoration: BoxDecoration(
-                color: navy, borderRadius: BorderRadius.circular(24)),
+                color: navy, borderRadius: BorderRadius.circular(4)),
             child: const Padding(
                 padding: EdgeInsets.all(20),
                 child: CustomPaint(painter: _BuildingArt()))),
         const SizedBox(height: 26),
         text(copy('ui002'), size: 32, weight: FontWeight.w700),
         const SizedBox(height: 10),
-        text(copy('ui003'), color: muted),
+        reading(copy('ui003'), size: 17),
         const SizedBox(height: 25),
         guideStep(Icons.pie_chart_outline, copy('ui004'), copy('ui005')),
         guideStep(Icons.task_alt, copy('ui006'), copy('ui007')),
@@ -54,8 +54,8 @@ extension OnboardingUI on _WorkspaceState {
         Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: const Color(0xFFE9EFFD),
-                borderRadius: BorderRadius.circular(12)),
+                color: const Color(0xFFE0E7DE),
+                borderRadius: BorderRadius.circular(3)),
             child: Icon(icon, color: blue, size: 21)),
         const SizedBox(width: 14),
         Expanded(
@@ -149,42 +149,58 @@ class _BuildingArt extends CustomPainter {
   const _BuildingArt();
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint();
+    final p = Paint();
     final w = size.width, h = size.height;
+    canvas.drawRect(Offset.zero & size, p..color = const Color(0xFF163845));
+    for (var i = 0; i < 12; i++) {
+      canvas.drawCircle(
+          Offset(w * (.06 + (i * .173) % 1), h * (.1 + (i * .071) % .35)),
+          .7,
+          p..color = const Color(0xFF809C9F));
+    }
     for (var n = 0; n < 3; n++) {
-      final x = w * (.08 + n * .3),
-          y = h * (.18 + n * .05),
-          bw = w * .25,
-          bh = h - y - 12;
-      canvas.drawRRect(
-          RRect.fromRectAndRadius(
-              Rect.fromLTWH(x, y, bw, bh), const Radius.circular(5)),
-          paint
+      final x = w * (.06 + n * .29),
+          y = h * (.35 + n * .065),
+          bw = w * .27,
+          bh = h - y;
+      canvas.drawRect(
+          Rect.fromLTWH(x, y, bw, bh),
+          p
             ..color = [
-              const Color(0xFF7391BE),
-              const Color(0xFFB6C9E4),
-              const Color(0xFF42658F)
+              const Color(0xFF47636B),
+              const Color(0xFF74847F),
+              const Color(0xFF355561)
             ][n]);
       for (var r = 0; r < 7; r++) {
-        for (var c = 0; c < 3; c++) {
-          canvas.drawRRect(
-              RRect.fromRectAndRadius(
-                  Rect.fromLTWH(x + bw * .14 + c * bw * .26,
-                      y + 12 + r * (bh - 20) / 7, bw * .13, (bh - 20) / 12),
-                  const Radius.circular(1.5)),
-              paint
+        for (var c = 0; c < 4; c++) {
+          canvas.drawRect(
+              Rect.fromLTWH(x + bw * .12 + c * bw * .22,
+                  y + 10 + r * (bh - 15) / 7, bw * .1, bh * .065),
+              p
                 ..color = (r + c + n) % 4 == 0
-                    ? const Color(0xFFF6C882)
-                    : const Color(0xFF163B66));
+                    ? const Color(0xFF203F49)
+                    : [
+                        const Color(0xFFE0C18B),
+                        const Color(0xFFB8BB9A),
+                        const Color(0xFFD5AF6F)
+                      ][(r + c) % 3]);
         }
       }
     }
-    canvas.drawLine(
-        Offset(0, h - 8),
-        Offset(w, h - 8),
-        paint
-          ..color = const Color(0xFF91ACC9)
-          ..strokeWidth = 2);
+    final snow = Path()
+      ..moveTo(0, h * .83)
+      ..quadraticBezierTo(w * .3, h * .78, w * .55, h * .88)
+      ..quadraticBezierTo(w * .8, h * .96, w, h * .82)
+      ..lineTo(w, h)
+      ..lineTo(0, h)
+      ..close();
+    canvas.drawPath(snow, p..color = const Color(0xFFBACBC5));
+    canvas.drawRect(Rect.fromLTWH(w * .48, 0, w * .04, h),
+        p..color = const Color(0xFF14323F));
+    canvas.drawRect(Rect.fromLTWH(0, h * .49, w, h * .045),
+        p..color = const Color(0xFF14323F));
+    canvas.drawRect(Rect.fromLTWH(w * .45, h * .47, w * .1, h * .03),
+        p..color = const Color(0xFFE2C18A));
   }
 
   @override

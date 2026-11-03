@@ -19,3 +19,15 @@ flutter:
         - asset: assets/fonts/OrtaqSans-Regular.ttf
         - asset: assets/fonts/OrtaqSans-Bold.ttf
           weight: 700
+    - family: LibreFranklin
+      fonts:
+        - asset: assets/fonts/librefranklin-400.ttf
+          weight: 400
+        - asset: assets/fonts/librefranklin-600.ttf
+          weight: 600
+        - asset: assets/fonts/librefranklin-700.ttf
+          weight: 700
+    - family: SourceSerif
+      fonts:
+        - asset: assets/fonts/sourceserif4-400.ttf
+          weight: 400

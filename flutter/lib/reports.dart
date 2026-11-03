@@ -329,12 +329,12 @@ class _Donut extends CustomPainter {
   final List<double> values;
   _Donut(this.values);
   static const colors = [
-    Color(0xFF3269ED),
-    Color(0xFF16A394),
-    Color(0xFFF2B454),
-    Color(0xFF9B85DE),
-    Color(0xFFEA8181),
-    Color(0xFF7C95B6)
+    Color(0xFF315E6E),
+    Color(0xFF70A79A),
+    Color(0xFFD4B476),
+    Color(0xFF8FA7B0),
+    Color(0xFFC39C89),
+    Color(0xFFADBAA9)
   ];
   @override
   void paint(Canvas canvas, Size size) {

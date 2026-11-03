@@ -79,6 +79,8 @@ export const S = {
   receiptsLabel: "receipts",
   everyTenge: "every tenge visible",
   compactLive: "Live · Apartment",
+  sharedLive: "Live · our shared building",
+  connecting: "Opening the view…",
   compactCaption: "Your home, in perspective",
   webgl:
     "WebGL 2 is required. Try enabling hardware acceleration or use another browser.",
@@ -89,52 +91,53 @@ export const S = {
 } as const;
 export const chapterCopy = [
   {
-    title: "A home, connected",
+    title: "Home starts here.",
     caption:
-      "Ortaq: every expense and every problem, visible to every resident.",
+      "120 windows in Astana. One is Arman’s home. Every person here has a stake in what happens next.",
   },
   {
-    title: "It starts with one resident",
+    title: "A cold morning.",
     caption:
-      "Apartment 45 reports a cold radiator. A photo. A location. A clear first step.",
+      "Arman notices the shared corridor is cold. From apartment 45, he sends a photo and asks someone to take a look.",
   },
   {
-    title: "One problem. A shared voice.",
+    title: "Ours too.",
     caption:
-      "Three neighbours tap “Me too”. One issue, supported together instead of reported four times.",
+      "Three neighbours feel it too. Their voices gather around one report. No one has to ask alone.",
   },
   {
-    title: "The right person, on the job",
-    caption: "The chairman assigns a plumber. The issue moves to In Progress.",
+    title: "Someone takes care.",
+    caption:
+      "The chairman sees the people behind the report. A plumber is assigned, and work begins at entrance 2.",
   },
   {
-    title: "Proof that the work is done",
+    title: "Warmth, restored.",
     caption:
-      "Resolved with a result photo. The resident is notified. Resolved in 2 days.",
+      "Two days later, the radiator is warm. A result photo closes the loop, and Arman hears the good news.",
   },
   {
-    title: "Every tenge has a story",
+    title: "Care has a cost.",
     caption:
-      "Monthly fees enter the building fund. Expenses flow to six categories. A report with 18 receipts is published.",
+      "A warm corridor. A clean stairwell. A working lift. Eighteen receipts show exactly how the shared fund cared for this place.",
   },
   {
-    title: "Everyone stays in the loop",
+    title: "No one left guessing.",
     caption:
-      "“Water shut-off on Friday.” One announcement reaches every apartment.",
+      "“Water shut-off on Friday.” One small notice reaches every window, so no neighbour is caught unprepared.",
   },
   {
-    title: "A voice for every apartment",
+    title: "A say in our home.",
     caption:
-      "“Install cameras at entrances?” One advisory vote per apartment. The closed result: 68% Yes.",
+      "Should we add cameras at the entrances? Each apartment has one advisory vote. In this scripted result, 68% say yes.",
   },
   {
-    title: "A stronger community, together",
+    title: "More windows. More care.",
     caption:
-      "Next: scale to three buildings. The same transparency, for more neighbours.",
+      "One entrance becomes one building. One building becomes a neighbourhood. More windows. The same care.",
   },
 ] as const;
 export const C = {
-  subtitle: "THE PROCESS, IN 90 SECONDS",
+  subtitle: "a shared home, in 90 seconds",
   report: "Report published",
   receipts: "18 receipts · 6 categories · every tenge visible",
   water: "Water shut-off on Friday",
@@ -142,11 +145,11 @@ export const C = {
   poll: "Install cameras at entrances?",
   yes: "Yes",
   no: "No",
-  advisory: "ADVISORY · SCRIPTED CLOSED RESULT",
+  advisory: "Advisory poll · scripted closed result",
   resolved: "Resolved in 2 days",
   notified: "Apartment 45 notified",
   phoneTitle: "Report a problem",
-  phoneApartment: "APARTMENT 45 · ENTRANCE 2 · FLOOR 5",
+  phoneApartment: "Arman · apartment 45. Entrance 2, floor 5.",
   phoneIssue: "Cold radiator",
   phoneBody: "The shared corridor radiator is cold. Please send a plumber.",
   photo: "Photo attached",
@@ -162,3 +165,69 @@ export const C = {
   restart: "Start again",
   return: "Return to live building",
 } as const;
+
+export const V = {
+  edition: "A shared home",
+  address: "Kabanbay Batyr Ave 60 · Astana",
+  winterPlace: "A winter evening in Kazakhstan",
+  winterDay: "An Astana winter day",
+  summerDay: "An Astana summer day",
+  summerPlace: "A summer evening in Kazakhstan",
+  enter: "Enter your building",
+  live: "Connected to your building",
+  titleFirst: "120 windows.",
+  titleSecond: "One shared home.",
+  introduction:
+    "A cold corridor. Three neighbours. One small report that brought the warmth back.",
+  liveDescription:
+    "The place we share. The things we notice. The care that makes a difference.",
+  watch: "Watch our story",
+  filmLength: "A 90-second journey through one shared home",
+  explore: "Explore your building",
+  dedication: "For the people behind every window.",
+  settings: "View the neighbourhood",
+  evening: "Evening",
+  moneyTitleFirst: "Care,",
+  moneyTitleSecond: "accounted for.",
+  moneyDescription:
+    "Follow the shared fund from each apartment to the work it pays for.",
+  moneyView: "Follow the money",
+  apartment: "Apartment",
+  apartment45:
+    "A cold radiator brought three neighbours together. Follow the small report that made this entrance warmer.",
+  apartmentOther:
+    "One of 120 homes sharing this courtyard. Every apartment has a place in the story.",
+  followStory: "Follow apartment 45",
+  issueStory: "A neighbour’s report",
+  journal: "The building journal",
+  journalTitle: "Care, in progress.",
+  needsCare: "need care",
+  takenCare: "taken care of",
+  fundLabel: "Where our shared fund went",
+  receiptsCopy: "receipts, open to every neighbour",
+  homes: "homes",
+  entrances: "entrances",
+  sharedHome: "shared home",
+  pickWindow: "Choose a window",
+  pickPrompt: "Explore 120 homes",
+  tryWindow: "Choose a window. There is a home behind it.",
+  signature: "Made for our shared home.",
+  sharedLive: "Live · our shared building",
+  connecting: "Opening the view…",
+  compactCaption: "Every window belongs.",
+  welcome: "Come home.",
+  loginCopy:
+    "Your apartment. Your neighbours. Everything you share, a little clearer.",
+  enterHome: "Enter my building",
+} as const;
+export const chapterShort = [
+  "Home",
+  "Notice",
+  "Together",
+  "Respond",
+  "Resolve",
+  "See",
+  "Know",
+  "Choose",
+  "Grow",
+] as const;

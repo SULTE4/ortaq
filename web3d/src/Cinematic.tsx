@@ -1,7 +1,8 @@
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { useView } from "./store";
-import { C, S, chapterCopy } from "./strings";
+import { Icon } from "./icons";
+import { C, S, chapterCopy, chapterShort } from "./strings";
 import { chapterAt, duration, scriptVotes, cinematicClock } from "./cinematic";
 export function CinematicHUD() {
   const { time, playing, speed, set } = useView();
@@ -56,19 +57,19 @@ export function CinematicHUD() {
   return (
     <>
       <div className="cinema-top">
-        <span className="eyebrow">{C.subtitle}</span>
+        <span className="chapter-context">{C.subtitle}</span>
         <button
           className="glass cinema-exit"
           onClick={() =>
             set({ cinematic: false, playing: false, time: 0, selected: null })
           }
         >
-          ↙ {S.back}
+          <Icon name="arrow" /> {S.back}
         </button>
       </div>
       <div className="chapter-title" key={chapter}>
-        <p className="eyebrow">
-          {C.chapter} {String(chapter + 1).padStart(2, "0")} / 09
+        <p className="chapter-context">
+          {chapterShort[chapter]} · {C.subtitle}
         </p>
         <h1>{copy.title}</h1>
       </div>
@@ -76,9 +77,9 @@ export function CinematicHUD() {
         <div className="phone-mock">
           <div className="phone-speaker" />
           <div className="phone-wordmark">
-            ortaq <span>●</span>
+            ortaq <span />
           </div>
-          <p className="eyebrow">{C.phoneTitle}</p>
+          <p className="chapter-context">{C.phoneTitle}</p>
           <h3>{C.phoneIssue}</h3>
           <small>{C.phoneApartment}</small>
           <div className="radiator-photo">
@@ -87,17 +88,21 @@ export function CinematicHUD() {
                 <i key={i} />
               ))}
             </div>
-            <span>❄</span>
+            <span>
+              <Icon name="snow" />
+            </span>
           </div>
           <p>{C.phoneBody}</p>
           <div className="phone-done">
-            ✓ {time >= 20 ? C.support : C.submitted}
+            <Icon name="check" /> {time >= 20 ? C.support : C.submitted}
           </div>
         </div>
       )}
       {time >= 30 && time < 40 && (
         <div className="cinema-fact glass amber">
-          <span>◈</span>
+          <span>
+            <Icon name="arrow" />
+          </span>
           <div>
             <b>In Progress</b>
             <p>{C.assigned}</p>
@@ -106,7 +111,9 @@ export function CinematicHUD() {
       )}
       {time >= 40 && time < 50 && (
         <div className="cinema-fact glass green">
-          <span>✓</span>
+          <span>
+            <Icon name="check" />
+          </span>
           <div>
             <b>{C.resolved}</b>
             <p>
@@ -122,7 +129,9 @@ export function CinematicHUD() {
       )}
       {time >= 50 && time < 60 && (
         <div className="cinema-fact glass blue">
-          <span>▤</span>
+          <span>
+            <Icon name="check" />
+          </span>
           <div>
             <b>{C.report}</b>
             <p>{C.receipts}</p>
@@ -131,7 +140,9 @@ export function CinematicHUD() {
       )}
       {time >= 60 && time < 70 && (
         <div className="cinema-fact glass blue">
-          <span>◉</span>
+          <span>
+            <Icon name="arrow" />
+          </span>
           <div>
             <b>{C.water}</b>
             <p>{C.waterTime}</p>
@@ -140,7 +151,7 @@ export function CinematicHUD() {
       )}
       {time >= 70 && time < 80 && (
         <div className="cinema-poll glass">
-          <p className="eyebrow">{C.advisory}</p>
+          <p className="chapter-context">{C.advisory}</p>
           <h3>{C.poll}</h3>
           <div className="poll-result">
             <span>{C.yes}</span>
@@ -165,19 +176,19 @@ export function CinematicHUD() {
               aria-label={playing ? S.pause : S.play}
               onClick={() => set({ playing: !playing })}
             >
-              {playing ? "Ⅱ" : "▶"}
+              <Icon name={playing ? "pause" : "play"} />
             </button>
             <button
               aria-label={S.previous}
               onClick={() => seek(Math.max(0, chapter - 1) * 10)}
             >
-              │◀
+              <Icon name="arrow" />
             </button>
             <button
               aria-label={S.next}
               onClick={() => seek((chapter + 1) * 10)}
             >
-              ▶│
+              <Icon name="arrow" />
             </button>
             <span className="time-label">
               {Math.floor(time).toString().padStart(2, "0")} <i>/ 90s</i>
@@ -209,7 +220,7 @@ export function CinematicHUD() {
                 title={c.title}
                 onClick={() => seek(i * 10)}
               >
-                {String(i + 1).padStart(2, "0")}
+                {chapterShort[i]}
               </button>
             ))}
           </div>

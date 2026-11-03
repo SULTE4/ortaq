@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   CameraControls,
   ContactShadows,
@@ -15,6 +15,7 @@ import {
   N8AO,
 } from "@react-three/postprocessing";
 import * as THREE from "three";
+import { useReducedMotion } from "./useReducedMotion";
 import { useView } from "./store";
 import {
   apartmentCell,
@@ -26,10 +27,29 @@ import {
   statusColors,
 } from "./domain";
 import { S } from "./strings";
-import { cameraAt, scriptIssue, cinematicClock } from "./cinematic";
+import {
+  cameraAt,
+  scriptIssue,
+  cinematicClock,
+  scriptVotedApartments,
+} from "./cinematic";
+import { NeighbourhoodDetails } from "./Neighbourhood";
 import { ScriptedEffects } from "./ScriptedEffects";
 import type { Issue, Vec3 } from "./types";
 
+// Keep the same scene responsive on software-rendered classroom/remote browsers.
+function RendererQuality() {
+  const gl = useThree((s) => s.gl);
+  useLayoutEffect(() => {
+    const ext = gl.getContext().getExtension("WEBGL_debug_renderer_info");
+    const renderer = ext
+      ? gl.getContext().getParameter(ext.UNMASKED_RENDERER_WEBGL)
+      : "";
+    if (/swiftshader|llvmpipe|softpipe|software rasterizer/i.test(renderer))
+      useView.getState().set({ quality: false });
+  }, [gl]);
+  return null;
+}
 function Box({
   at,
   size,
@@ -61,15 +81,11 @@ function Windows({
   const temp = useMemo(() => new THREE.Object3D(), []);
   const ref = useRef<THREE.InstancedMesh>(null!);
   const frame = useRef<THREE.InstancedMesh>(null!);
-  const { night, snapshot, balances, cinematic, time } = useView();
-  const voted =
-    cinematic && time >= 70
-      ? Array.from(
-          { length: Math.min(100, Math.floor((time - 70) * 12)) },
-          (_, i) => i + 1,
-        )
-      : ((snapshot?.polls.find((p) => !p.closed) ?? snapshot?.polls[0])
-          ?.voted_apartments ?? []);
+  const { night, snapshot, balances, cinematic, time, focus, set } = useView();
+  const voted = cinematic
+    ? scriptVotedApartments(time)
+    : ((snapshot?.polls.find((p) => !p.closed) ?? snapshot?.polls[0])
+        ?.voted_apartments ?? []);
   const votedKey = voted.join(",");
   const base = useRef<THREE.Color[]>([]),
     waveStart = useRef(-100),
@@ -126,8 +142,8 @@ function Windows({
           : "#8c9cac"
         : night
           ? i % 5 === 0
-            ? "#294765"
-            : "#e8bc77"
+            ? "#193946"
+            : ["#d9b475", "#e6ca9a", "#d0a363", "#b6bba2"][i % 4]
           : "#244e76";
       if (!ghost && voted.includes(i + 1)) color = "#5cd9b4";
       if (!ghost && balances && !cinematic) {
@@ -140,6 +156,7 @@ function Windows({
         color = voted.includes(i + 1) ? "#77ffe1" : "#f6c36c";
       if (!ghost && cinematic && i === 44 && time >= 10)
         color = time >= 40 ? "#48e4b3" : "#f08d82";
+      if (!ghost && focus === i + 1) color = "#f9dfac";
       c.set(color);
       ref.current.setColorAt(i, c);
       base.current[i] = c.clone();
@@ -154,6 +171,7 @@ function Windows({
     night,
     snapshot,
     balances,
+    focus,
     votedKey,
     cinematic,
     Math.floor(time),
@@ -162,20 +180,60 @@ function Windows({
     <>
       <instancedMesh ref={frame} args={[undefined, undefined, 120]}>
         <boxGeometry args={[1.05, 0.88, 0.13]} />
-        <meshStandardMaterial color={ghost ? "#94a2b3" : "#d7e3ef"} />
+        <meshStandardMaterial color={ghost ? "#566a72" : "#b8bbaa"} />
       </instancedMesh>
       <instancedMesh
         ref={ref}
         args={[undefined, undefined, 120]}
         position={[0, 0, 0.08]}
+        onClick={(e) => {
+          if (!ghost && e.instanceId !== undefined) {
+            e.stopPropagation();
+            set({ focus: e.instanceId + 1, selected: null, money: false });
+          }
+        }}
+        onPointerOver={() => {
+          if (!ghost) document.body.style.cursor = "pointer";
+        }}
+        onPointerOut={() => {
+          document.body.style.cursor = "auto";
+        }}
       >
         <boxGeometry args={[0.85, 0.68, 0.12]} />
         <meshStandardMaterial
           toneMapped={!night}
           roughness={0.25}
           metalness={0.2}
-          emissive={night ? "#b88f56" : "#74a9c5"}
-          emissiveIntensity={night ? 0.45 : 0.12}
+          emissive="#ffffff"
+          emissiveIntensity={
+            night
+              ? ghost
+                ? cinematic && time >= 80
+                  ? 1.2
+                  : 0.12
+                : 1.1
+              : 0.03
+          }
+          onBeforeCompile={(shader) => {
+            shader.vertexShader = shader.vertexShader
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec3 vWindowTint;",
+              )
+              .replace(
+                "#include <begin_vertex>",
+                "#include <begin_vertex>\n#ifdef USE_INSTANCING_COLOR\nvWindowTint=instanceColor;\n#else\nvWindowTint=vec3(1.);\n#endif",
+              );
+            shader.fragmentShader = shader.fragmentShader
+              .replace(
+                "#include <common>",
+                "#include <common>\nvarying vec3 vWindowTint;",
+              )
+              .replace(
+                "#include <emissivemap_fragment>",
+                "#include <emissivemap_fragment>\ntotalEmissiveRadiance *= vWindowTint;",
+              );
+          }}
         />
       </instancedMesh>
     </>
@@ -202,11 +260,11 @@ function Building({
             color={
               ghost
                 ? light
-                  ? "#d0ddeb"
-                  : "#b5c0cc"
+                  ? "#abb6b4"
+                  : "#657880"
                 : i === 1
-                  ? "#d8e3ee"
-                  : "#e7edf4"
+                  ? "#b3b8b1"
+                  : "#c5c6b8"
             }
           />
           <Box
@@ -235,11 +293,16 @@ function Building({
               key={f}
               at={[v, 1.1 + f * 1.16, 2.05]}
               size={[7.8, 0.07, 0.16]}
-              color={ghost ? "#a9b7c8" : "#a6bacf"}
+              color={ghost ? "#617780" : "#9faeaa"}
             />
           ))}
           {!ghost && (
-            <Html position={[v, 2.1, 3]} center distanceFactor={26}>
+            <Html
+              zIndexRange={[3, 0]}
+              position={[v, 2.1, 3]}
+              center
+              distanceFactor={26}
+            >
               <div className="entrance-tag">0{i + 1}</div>
             </Html>
           )}
@@ -247,11 +310,21 @@ function Building({
       ))}
       <Windows ghost={ghost} />
       {ghost ? (
-        <Html position={[0, 14, 0]} center distanceFactor={40}>
+        <Html
+          zIndexRange={[3, 0]}
+          position={[0, 14, 0]}
+          center
+          distanceFactor={40}
+        >
           <div className="neighbour-label">{S.neighbours}</div>
         </Html>
       ) : (
-        <Html position={[0, 13, 0]} center distanceFactor={38}>
+        <Html
+          zIndexRange={[3, 0]}
+          position={[0, 13, 0]}
+          center
+          distanceFactor={38}
+        >
           <div className="building-label">
             ЖК Ortaq Demo<span>{S.buildingTag}</span>
           </div>
@@ -269,7 +342,15 @@ function Tree({ at, small = false }: { at: Vec3; small?: boolean }) {
         <mesh key={i} position={[0, 1.15 + i * 0.55, 0]} castShadow>
           <coneGeometry args={[1.05 - i * 0.2, 1.5, 7]} />
           <meshStandardMaterial
-            color={winter ? "#d6e6eb" : i % 2 ? "#4e8779" : "#3d7169"}
+            color={
+              winter
+                ? i === 2
+                  ? "#c7d4d0"
+                  : "#4d7370"
+                : i % 2
+                  ? "#4e8779"
+                  : "#3d7169"
+            }
             roughness={1}
           />
         </mesh>
@@ -297,7 +378,17 @@ function Courtyard() {
         position={[-8, 0.02, -6]}
         receiveShadow
       >
-        <meshStandardMaterial color={winter ? "#e9f0f6" : "#a5c4ae"} />
+        <meshStandardMaterial
+          color={
+            winter
+              ? night
+                ? "#66828c"
+                : "#e9f0f6"
+              : night
+                ? "#324f4c"
+                : "#a5c4ae"
+          }
+        />
       </RoundedBox>
       <Box at={[0, 0.23, 4.4]} size={[28, 0.14, 1.8]} color="#c5d2df" />
       <Box at={[-13, 0.24, 8]} size={[1.6, 0.14, 9]} color="#c5d2df" />
@@ -405,13 +496,13 @@ function Skyline() {
             key={i}
             at={[-55 + i * 5.7, h / 2, 0]}
             size={[3, h, 3]}
-            color="#b5c6d8"
+            color="#455e6b"
           />
         );
       })}
       <mesh position={[25, 12, -3]}>
         <sphereGeometry args={[3.6, 12, 10]} />
-        <meshStandardMaterial color="#bdc9cc" metalness={0.4} roughness={0.4} />
+        <meshStandardMaterial color="#bfa670" metalness={0.4} roughness={0.4} />
       </mesh>
       <Box at={[25, 4, -3]} size={[0.5, 11, 0.5]} color="#a5b7ca" />
     </group>
@@ -470,7 +561,7 @@ function Pin({ issue }: { issue: Issue }) {
       position={at}
       onClick={(e) => {
         e.stopPropagation();
-        set({ selected: issue.id });
+        set({ selected: issue.id, focus: null, money: false });
       }}
       onPointerOver={() => {
         document.body.style.cursor = "pointer";
@@ -499,7 +590,7 @@ function Pin({ issue }: { issue: Issue }) {
         <meshBasicMaterial color={color} />
       </mesh>
       {selected === issue.id && (
-        <Html position={[0, 0.8, 0]} center>
+        <Html zIndexRange={[3, 0]} position={[0, 0.8, 0]} center>
           <div className="pin-tooltip">{issue.title}</div>
         </Html>
       )}
@@ -522,17 +613,18 @@ function Flow() {
     : report
       ? groupExpenses(effectiveExpenses(report))
       : [];
-  const core: Vec3 = [-18, 3, 0];
-  const positions = groups.map(
-    (_, i) =>
-      [
-        -18 + Math.cos((i / 6) * Math.PI * 2) * 5,
-        2 + Math.sin((i / 6) * Math.PI * 2) * 1.6,
-        Math.sin((i / 6) * Math.PI * 2) * 5,
-      ] as Vec3,
-  );
+  const core: Vec3 = [-18, 5, 0];
+  const positions = groups.map((_, i) => {
+    const side = i < 3 ? -1 : 1;
+    return [
+      -18 + side * 8.5 * 0.93,
+      [1.7, 5, 8.3][i % 3],
+      side * 8.5 * 0.37,
+    ] as Vec3;
+  });
   const particles = useRef<THREE.InstancedMesh>(null!);
-  const visible = groups.length > 0 && (!cinematic || time >= 50);
+  const visible =
+    groups.length > 0 && (!cinematic || (time >= 50 && time < 60));
   useFrame(({ clock }) => {
     if (!particles.current) return;
     for (let i = 0; i < 54; i++) {
@@ -572,7 +664,12 @@ function Flow() {
           toneMapped={false}
         />
       </mesh>
-      <Html position={[-18, 4.7, 0]} center distanceFactor={40}>
+      <Html
+        zIndexRange={[3, 0]}
+        position={[-18, 6.8, 0]}
+        center
+        distanceFactor={40}
+      >
         <div className="fund-label">
           {S.fund}
           <b>{money(groups.reduce((s, e) => s + e[1], 0))}</b>
@@ -590,7 +687,12 @@ function Flow() {
               emissiveIntensity={0.6}
             />
           </mesh>
-          <Html position={[0, 1.1, 0]} center distanceFactor={40}>
+          <Html
+            zIndexRange={[3, 0]}
+            position={[0, 1.1, 0]}
+            center
+            distanceFactor={40}
+          >
             <div className="category-label" title={money(amount)}>
               {cat}
               <span>{money(amount)}</span>
@@ -619,8 +721,10 @@ function AnnouncementRipple() {
   }, [id]);
   useFrame(() => {
     const scripted = cinematic && time >= 60 && time < 70;
-    const elapsed = scripted
-      ? (time - 60) % 4
+    const elapsed = cinematic
+      ? scripted
+        ? (time - 60) % 4
+        : -1
       : performance.now() / 1000 - start.current;
     ref.current.visible = elapsed >= 0 && elapsed < 5;
     ref.current.scale.setScalar(1 + elapsed * 6);
@@ -642,22 +746,44 @@ function AnnouncementRipple() {
   );
 }
 function CameraRig() {
+  const reduced = useReducedMotion();
   const ref = useRef<CameraControls>(null!);
+  const width = useThree((s) => s.size.width);
+  const camera = useThree((s) => s.camera);
+  const focus = useView((s) => s.focus);
+  const moneyView = useView((s) => s.money);
   const selected = useView((s) => s.selected),
     snapshot = useView((s) => s.snapshot),
     cinematic = useView((s) => s.cinematic);
   useEffect(() => {
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov = !cinematic && width <= 900 ? 32 : 43;
+      camera.updateProjectionMatrix();
+    }
     if (cinematic) return;
     const issue = snapshot?.issues.find((i) => i.id === selected);
     if (issue) {
       const p = issuePosition(issue.location);
-      ref.current?.setLookAt(p[0] + 10, p[1] + 7, p[2] + 18, ...p, true);
-    } else ref.current?.setLookAt(33, 25, 39, 0, 5, 1, true);
-  }, [selected, cinematic]);
+      ref.current?.setLookAt(p[0] + 10, p[1] + 7, p[2] + 18, ...p, !reduced);
+    } else if (focus) {
+      const p = apartmentCell(focus).position;
+      ref.current?.setLookAt(p[0] + 10, p[1] + 5, p[2] + 18, ...p, !reduced);
+    } else if (moneyView) {
+      if (width <= 900)
+        ref.current?.setLookAt(-29, 17, 20, -18, 2, 0, !reduced);
+      else ref.current?.setLookAt(-30, 21, 30, -9, 4, 0, !reduced);
+    } else if (width <= 900)
+      ref.current?.setLookAt(28, 19, 36, 0, 4, 0, !reduced);
+    else ref.current?.setLookAt(31, 21, 40, -7, 5, 0, !reduced);
+  }, [selected, cinematic, focus, width, camera, reduced, moneyView]);
   useFrame(() => {
     const state = useView.getState();
     if (state.cinematic && ref.current) {
-      const shot = cameraAt(cinematicClock.time);
+      const shot = cameraAt(
+        reduced
+          ? Math.floor(cinematicClock.time / 10) * 10
+          : cinematicClock.time,
+      );
       ref.current.setLookAt(...shot.position, ...shot.target, false);
     }
   });
@@ -674,8 +800,8 @@ function CameraRig() {
   );
 }
 function LivePoll() {
-  const { snapshot, cinematic } = useView();
-  if (cinematic) return null;
+  const { snapshot, cinematic, money } = useView();
+  if (cinematic || money) return null;
   const poll = snapshot?.polls.find((p) => !p.closed) ?? snapshot?.polls[0];
   if (!poll) return null;
   const pct =
@@ -683,7 +809,12 @@ function LivePoll() {
       ? (poll.results[0] / Math.max(1, poll.total_votes)) * 100
       : (poll.total_votes / 120) * 100;
   return (
-    <Html position={[0, 15.2, 0]} center distanceFactor={46}>
+    <Html
+      zIndexRange={[3, 0]}
+      position={[0, 15.2, 0]}
+      center
+      distanceFactor={46}
+    >
       <div className="roof-poll live-roof-poll">
         <small>{S.advisory}</small>
         {poll.question}
@@ -700,6 +831,7 @@ function LivePoll() {
   );
 }
 export function Scene() {
+  const reduced = useReducedMotion();
   const {
     winter,
     night,
@@ -717,18 +849,20 @@ export function Scene() {
   return (
     <Canvas
       shadows={quality}
-      dpr={quality ? [1, 1.5] : 1}
-      camera={{ position: [33, 25, 39], fov: 43, near: 0.1, far: 240 }}
+      dpr={quality ? [1, 1.25] : 1}
+      camera={{ position: [31, 21, 40], fov: 43, near: 0.1, far: 240 }}
       gl={{ antialias: !quality, powerPreference: "high-performance" }}
     >
-      <color attach="background" args={[night ? "#102540" : "#eaf0f7"]} />
-      <fog attach="fog" args={[night ? "#102540" : "#eaf0f7", 65, 145]} />
-      <ambientLight intensity={night ? 0.55 : 0.65} />
-      <hemisphereLight args={["#dcecff", "#7891a7", night ? 0.5 : 0.9]} />
+      <color attach="background" args={[night ? "#091e2a" : "#dde7e1"]} />
+      <fog attach="fog" args={[night ? "#091e2a" : "#dde7e1", 65, 145]} />
+      <ambientLight intensity={night ? 0.16 : 0.7} />
+      <hemisphereLight
+        args={[night ? "#91b8c3" : "#dce9e4", "#526b6f", night ? 0.25 : 1.1]}
+      />
       <directionalLight
         position={[-18, 30, 16]}
-        intensity={night ? 0.65 : 2.0}
-        color={night ? "#96baff" : "#fff2de"}
+        intensity={night ? 0.5 : 2.0}
+        color={night ? "#a3c2d5" : "#fff2de"}
         castShadow={quality}
         shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-35}
@@ -736,19 +870,23 @@ export function Scene() {
         shadow-camera-top={30}
         shadow-camera-bottom={-30}
         shadow-bias={-0.0005}
+        shadow-autoUpdate={false}
+        shadow-needsUpdate={true}
       />
       <Environment resolution={64}>
         <Lightformer
           position={[0, 20, 0]}
           rotation={[Math.PI / 2, 0, 0]}
           scale={40}
-          intensity={1.4}
+          intensity={night ? 0.16 : 1.2}
         />
       </Environment>
+      <RendererQuality />
       <Courtyard />
+      <NeighbourhoodDetails />
       <Building />
       <LivePoll />
-      <Building x={-32} z={-20} ghost />
+      <Building x={-20} z={-36} ghost />
       <Building x={9} z={-29} ghost />
       <Skyline />
       {issues.map((i) => (
@@ -757,7 +895,7 @@ export function Scene() {
       {cinematic && <ScriptedEffects />}
       {(showMoney || cinematic) && <Flow />}
       <AnnouncementRipple />
-      {winter && <Snow />}
+      {winter && !reduced && <Snow />}
       <ContactShadows
         position={[0, 0.17, 3]}
         opacity={night ? 0.2 : 0.24}
@@ -775,7 +913,7 @@ export function Scene() {
             <Bloom
               key="bloom"
               luminanceThreshold={1}
-              intensity={0.25}
+              intensity={0.45}
               mipmapBlur
             />,
             ...(cinematic

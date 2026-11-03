@@ -20,10 +20,10 @@ part 'onboarding.dart';
 part 'dashboard.dart';
 part 'embed.dart';
 
-const navy = Color(0xFF102B4E),
-    blue = Color(0xFF3269ED),
-    paper = Color(0xFFF4F6FA),
-    muted = Color(0xFF718096);
+const navy = Color(0xFF14323F),
+    blue = Color(0xFF315E6E),
+    paper = Color(0xFFEDF0EA),
+    muted = Color(0xFF536B72);
 bool adminCopy = false;
 String copy(String key, [List<Object?> values = const []]) {
   var value = (adminCopy ? adminStrings : residentStrings)[key] ?? key;
@@ -43,9 +43,10 @@ class OrtaqApp extends StatelessWidget {
       theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(
-              seedColor: blue, primary: blue, surface: Colors.white),
+              seedColor: navy, primary: navy, surface: Colors.white),
           scaffoldBackgroundColor: paper,
-          fontFamily: 'OrtaqSans',
+          fontFamily: 'LibreFranklin',
+          fontFamilyFallback: const ['OrtaqSans'],
           textTheme: const TextTheme(
               headlineLarge: TextStyle(
                   fontSize: 32, fontWeight: FontWeight.w700, color: navy),
@@ -59,13 +60,15 @@ class OrtaqApp extends StatelessWidget {
               fillColor: paper,
               border: OutlineInputBorder(
                   borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.circular(12))),
+                  borderRadius: BorderRadius.circular(4))),
           filledButtonTheme: FilledButtonThemeData(
               style: FilledButton.styleFrom(
+                  backgroundColor: navy,
+                  foregroundColor: const Color(0xFFF1F2E8),
                   padding:
                       const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12))))),
+                      borderRadius: BorderRadius.circular(4))))),
       home: Workspace(admin: admin));
 }
 
@@ -155,14 +158,24 @@ class _WorkspaceState extends State<Workspace> {
           FontWeight weight = FontWeight.normal}) =>
       Text(value,
           style: TextStyle(
-              fontSize: size, color: color, fontWeight: weight, height: 1.35));
+              fontSize: size,
+              color: color,
+              fontWeight: weight,
+              height: 1.4,
+              letterSpacing: size >= 28 ? -size * .045 : -.15));
+  Widget reading(String value, {double size = 17, Color color = muted}) =>
+      Text(value,
+          style: TextStyle(
+              fontFamily: 'SourceSerif',
+              fontFamilyFallback: const ['OrtaqSans'],
+              fontSize: size,
+              height: 1.5,
+              color: color));
   Widget card(Widget child, {Color color = Colors.white}) => Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: const Color(0xFFE4E9F1))),
+          color: color, borderRadius: BorderRadius.circular(4), border: null),
       child: child);
   Widget field(TextEditingController c, String label, {int lines = 1}) =>
       Padding(
@@ -189,7 +202,11 @@ class _WorkspaceState extends State<Workspace> {
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    text(copy('ui001'), size: 42, weight: FontWeight.w800),
+                    Row(children: [
+                      windowMark(size: 24),
+                      const SizedBox(width: 12),
+                      text(copy('ui001'), size: 36, weight: FontWeight.w500)
+                    ]),
                     const SizedBox(height: 10),
                     text(widget.admin ? copy('ui177') : copy('ui178'),
                         size: 10, color: blue, weight: FontWeight.w700),
@@ -282,6 +299,36 @@ class _WorkspaceState extends State<Workspace> {
         '3d': Icons.view_in_ar_outlined
       }[p] ??
       Icons.circle_outlined;
+  Widget windowMark(
+          {double size = 20, Color color = const Color(0xFFB28D53)}) =>
+      SizedBox(
+          width: size,
+          height: size * 1.25,
+          child: Column(children: [
+            Expanded(
+                child: Row(children: [
+              Expanded(
+                  child:
+                      ColoredBox(color: color, child: const SizedBox.expand())),
+              SizedBox(width: size * .12),
+              Expanded(
+                  child: ColoredBox(
+                      color: color.withValues(alpha: .4),
+                      child: const SizedBox.expand()))
+            ])),
+            SizedBox(height: size * .12),
+            Expanded(
+                child: Row(children: [
+              Expanded(
+                  child: ColoredBox(
+                      color: color.withValues(alpha: .65),
+                      child: const SizedBox.expand())),
+              SizedBox(width: size * .12),
+              Expanded(
+                  child:
+                      ColoredBox(color: color, child: const SizedBox.expand()))
+            ]))
+          ]));
   Widget sidebar() => Container(
       width: 228,
       color: navy,
@@ -290,12 +337,16 @@ class _WorkspaceState extends State<Workspace> {
             padding: const EdgeInsets.fromLTRB(28, 30, 20, 38),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              text(copy('ui001'),
-                  size: 38, color: Colors.white, weight: FontWeight.w800),
+              Row(children: [
+                windowMark(size: 23, color: const Color(0xFFE1C28D)),
+                const SizedBox(width: 12),
+                text(copy('ui001'),
+                    size: 34, color: Colors.white, weight: FontWeight.w500)
+              ]),
               const SizedBox(height: 5),
               text(copy('ui187'),
-                  size: 9,
-                  color: const Color(0xFF9CB5D2),
+                  size: 12,
+                  color: const Color(0xFFB4C4C5),
                   weight: FontWeight.w600)
             ])),
         Expanded(
@@ -306,10 +357,9 @@ class _WorkspaceState extends State<Workspace> {
                         padding: const EdgeInsets.only(bottom: 7),
                         child: ListTile(
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                                borderRadius: BorderRadius.circular(4)),
                             selected: page == p,
-                            selectedTileColor:
-                                Colors.white.withValues(alpha: .12),
+                            selectedTileColor: const Color(0xFF2D4F59),
                             leading: Icon(pageIcon(p),
                                 color: page == p
                                     ? Colors.white
@@ -329,10 +379,10 @@ class _WorkspaceState extends State<Workspace> {
             padding: const EdgeInsets.all(24),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              text(copy('ui188'), size: 11, color: const Color(0xFF9CB5D2)),
+              text(copy('ui188'), size: 11, color: const Color(0xFFB4C4C5)),
               const SizedBox(height: 12),
               text(copy('ui189'),
-                  size: 9,
+                  size: 12,
                   color: const Color(0xFF6F8BAD),
                   weight: FontWeight.w600)
             ]))
@@ -343,7 +393,11 @@ class _WorkspaceState extends State<Workspace> {
       color: Colors.white,
       child: Row(children: [
         if (!widget.admin)
-          text(copy('ui001'), size: 30, weight: FontWeight.w800)
+          Row(children: [
+            windowMark(size: 17),
+            const SizedBox(width: 11),
+            text(copy('ui001'), size: 29, weight: FontWeight.w500)
+          ])
         else
           Expanded(
               child: Column(
@@ -357,12 +411,12 @@ class _WorkspaceState extends State<Workspace> {
         if (!widget.admin) const Spacer(),
         if (!widget.admin)
           text(copy('ui191', [me?['apartment']]),
-              size: 10, color: blue, weight: FontWeight.w700),
+              size: 12, color: blue, weight: FontWeight.w700),
         notificationBell(),
         const SizedBox(width: 6),
         if (widget.admin)
           CircleAvatar(
-              backgroundColor: const Color(0xFFEDF2FF),
+              backgroundColor: const Color(0xFFE0E8DF),
               radius: 18,
               child: text(me?['name']?.substring(0, 1) ?? copy('ui192'),
                   color: blue, weight: FontWeight.w700)),
@@ -396,7 +450,7 @@ class _WorkspaceState extends State<Workspace> {
                                 color: page == p ? blue : muted, size: 22),
                             const SizedBox(height: 4),
                             text(s[p] ?? p,
-                                size: 9,
+                                size: 11,
                                 color: page == p ? blue : muted,
                                 weight: FontWeight.w600)
                           ])))))
@@ -427,8 +481,8 @@ class _WorkspaceState extends State<Workspace> {
                                         weight: FontWeight.w700),
                                     const SizedBox(height: 28),
                                     text(copy('ui194'),
-                                        size: 11,
-                                        color: const Color(0xFF9CB5D2)),
+                                        size: 16,
+                                        color: const Color(0xFFB4C4C5)),
                                     const SizedBox(height: 44),
                                     const SizedBox(
                                         height: 230,

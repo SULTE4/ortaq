@@ -12,7 +12,7 @@ extension IssuesUI on _WorkspaceState {
   Widget issueCard(dynamic issue) => Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(4),
           onTap: () => issueDetails(issue),
           child: card(
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -177,8 +177,8 @@ extension IssuesUI on _WorkspaceState {
                             decoration: BoxDecoration(
                                 color: candidate.isNotEmpty
                                     ? blue.withValues(alpha: .08)
-                                    : const Color(0xFFECF0F6),
-                                borderRadius: BorderRadius.circular(20),
+                                    : const Color(0xFFE2E7E0),
+                                borderRadius: BorderRadius.circular(4),
                                 border: Border.all(
                                     color: candidate.isNotEmpty
                                         ? blue
@@ -335,7 +335,7 @@ extension IssuesUI on _WorkspaceState {
       text(copy('ui079'), size: 13, weight: FontWeight.w700, color: blue),
       const SizedBox(height: 8),
       ...matches.map((i) => Card(
-          color: const Color(0xFFEDF3FF),
+          color: const Color(0xFFE5ECE5),
           child: ListTile(
               title: text(i['title'], size: 13, weight: FontWeight.w600),
               subtitle:

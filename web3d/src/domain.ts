@@ -1,12 +1,12 @@
 import type { Expense, Location, Report, Vec3 } from "./types.ts";
 export const statusColors = {
-  New: "#ef6b77",
-  "In Progress": "#f2b64f",
-  Resolved: "#38c79e",
+  New: "#ef8c7e",
+  "In Progress": "#e7c487",
+  Resolved: "#8bceb1",
 };
 export const categoryColors: Record<string, string> = {
   Cleaning: "#49c8c2",
-  Elevator: "#9c8aee",
+  Elevator: "#90a9bd",
   Security: "#f0b65e",
   Utilities: "#62a6fa",
   Repairs: "#ef8585",

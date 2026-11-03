@@ -82,7 +82,7 @@ class _ThreeDFrameState extends State<_ThreeDFrame> {
         final iframe = element as web.HTMLIFrameElement;
         frame = iframe;
         iframe.src =
-            '${widget.origin}/?embed=${widget.admin ? 'admin' : 'resident'}';
+            '${widget.origin}/?embed=${widget.admin ? 'admin' : 'resident'}${widget.compact ? '&mini=1' : ''}';
         iframe.title =
             widget.compact ? copy('iframeCompact') : copy('iframeFull');
         iframe.style.width = '100%';

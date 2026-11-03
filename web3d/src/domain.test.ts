@@ -72,3 +72,11 @@ test("camera follows a finite continuous path at all chapter boundaries", () => 
     assert.ok(Math.hypot(...before.map((v, i) => v - after[i])) < 0.01);
   }
 });
+
+import { scriptVotedApartments } from "./cinematic.ts";
+test("cinematic voter windows remain scripted before and after the voting chapter", () => {
+  assert.deepEqual(scriptVotedApartments(10), []);
+  assert.deepEqual(scriptVotedApartments(69), []);
+  assert.equal(scriptVotedApartments(78).length, 100);
+  assert.equal(new Set(scriptVotedApartments(78)).size, 100);
+});

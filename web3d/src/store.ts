@@ -3,6 +3,7 @@ import type { Snapshot } from "./types";
 interface ViewState {
   snapshot: Snapshot | null;
   selected: string | null;
+  focus: number | null;
   month: string;
   winter: boolean;
   night: boolean;
@@ -19,12 +20,13 @@ interface ViewState {
 export const useView = create<ViewState>()((set) => ({
   snapshot: null,
   selected: null,
+  focus: null,
   month: "",
   winter: true,
-  night: false,
+  night: true,
   quality: !new URLSearchParams(location.search).has("embed"),
   balances: false,
-  money: new URLSearchParams(location.search).get("embed") !== "resident",
+  money: false,
   connected: false,
   cinematic: false,
   time: 0,
