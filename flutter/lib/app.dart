@@ -8,6 +8,7 @@ import 'strings_admin.dart';
 part 'building.dart';
 part 'reports.dart';
 part 'issues.dart';
+part 'notifications.dart';
 const navy=Color(0xFF102B4E), blue=Color(0xFF3269ED), paper=Color(0xFFF4F6FA), muted=Color(0xFF718096);
 class OrtaqApp extends StatelessWidget {
  final bool admin; const OrtaqApp({super.key,required this.admin});
@@ -32,7 +33,7 @@ class _WorkspaceState extends State<Workspace>{
  Widget home()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text(s['welcome']!,size:28,weight:FontWeight.w700),const SizedBox(height:12),text(building?['name']??'',size:17),text(building?['address']??'',color:muted),const SizedBox(height:24),card(Column(crossAxisAlignment:CrossAxisAlignment.start,children:[const Icon(Icons.apartment,size:48,color:blue),const SizedBox(height:20),text(widget.admin?'120 homes. One community.':'This is your place.',size:24,weight:FontWeight.w700),text(widget.admin?'3 entrances · 9 floors · Astana':'Apartment ${me?['apartment']} · ${me?['name']}',color:muted)]))]);
  Widget content()=>page=='building'?buildingView():page=='reports'?reportsView():page=='issues'?issuesView():home();
  @override Widget build(BuildContext context){
- final inner=me==null?loginView():Column(children:[Container(padding:const EdgeInsets.symmetric(horizontal:24,vertical:18),color:Colors.white,child:Row(children:[text('ortaq',size:28,weight:FontWeight.w800),const Spacer(),text(widget.admin?'${me!['role']}'.toUpperCase():'APT ${me!['apartment']}',size:11,color:blue,weight:FontWeight.w700),IconButton(tooltip:'Sign out',onPressed:(){setState((){me=null;api.token='';requested=false;page='home';});},icon:const Icon(Icons.logout,size:19))])),Expanded(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Column(children:[if(error.isNotEmpty)card(text(error,color:Colors.red)),content()]))),if(pages.length>1)SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:pages.map((p)=>TextButton(onPressed:()=>setState(()=>page=p),child:Text(s[p]??p))).toList()))]);
+ final inner=me==null?loginView():Column(children:[Container(padding:const EdgeInsets.symmetric(horizontal:24,vertical:18),color:Colors.white,child:Row(children:[text('ortaq',size:28,weight:FontWeight.w800),const Spacer(),text(widget.admin?'${me!['role']}'.toUpperCase():'APT ${me!['apartment']}',size:11,color:blue,weight:FontWeight.w700),notificationBell(),IconButton(tooltip:'Sign out',onPressed:(){setState((){me=null;data={};api.token='';requested=false;page='home';timer?.cancel();});},icon:const Icon(Icons.logout,size:19))])),Expanded(child:SingleChildScrollView(padding:const EdgeInsets.all(24),child:Column(children:[if(error.isNotEmpty)card(text(error,color:Colors.red)),content()]))),if(pages.length>1)SingleChildScrollView(scrollDirection:Axis.horizontal,child:Row(children:pages.map((p)=>TextButton(onPressed:()=>setState(()=>page=p),child:Text(s[p]??p))).toList()))]);
  return Scaffold(body:widget.admin?inner:Center(child:Container(width:430,margin:const EdgeInsets.symmetric(vertical:18),clipBehavior:Clip.antiAlias,decoration:BoxDecoration(color:paper,borderRadius:BorderRadius.circular(34),border:Border.all(color:navy,width:7),boxShadow:[BoxShadow(color:navy.withValues(alpha:.15),blurRadius:60,offset:const Offset(0,20))]),child:inner)));
  }
 }

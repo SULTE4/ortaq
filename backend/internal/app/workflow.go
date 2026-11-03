@@ -58,6 +58,9 @@ func (a *API) workflowRoutes(m *http.ServeMux) {
 					note += " · " + in.Contractor
 				}
 				v.History = append(v.History, History{in.Status, a.Now(), note, in.ResultPhoto})
+				if from != in.Status {
+					s.notify(v.Reporter, v.BuildingID, "Your issue is "+in.Status, v.Title, "issue", v.ID, a.Now())
+				}
 				out = *v
 				return nil
 			}

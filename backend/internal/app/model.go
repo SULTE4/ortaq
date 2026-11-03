@@ -29,12 +29,13 @@ type Challenge struct {
 	Attempts int       `json:"attempts"`
 }
 type State struct {
-	Issues     []Issue              `json:"issues"`
-	Reports    []Report             `json:"reports"`
-	Users      []User               `json:"users"`
-	Buildings  []Building           `json:"buildings"`
-	Invites    []Invite             `json:"invites"`
-	Challenges map[string]Challenge `json:"challenges"`
+	Notifications []Notification       `json:"notifications"`
+	Issues        []Issue              `json:"issues"`
+	Reports       []Report             `json:"reports"`
+	Users         []User               `json:"users"`
+	Buildings     []Building           `json:"buildings"`
+	Invites       []Invite             `json:"invites"`
+	Challenges    map[string]Challenge `json:"challenges"`
 }
 
 func Seed(now time.Time) *State {
