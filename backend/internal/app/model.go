@@ -29,6 +29,7 @@ type Challenge struct {
 	Attempts int       `json:"attempts"`
 }
 type State struct {
+	Polls         []Poll               `json:"polls"`
 	Announcements []Announcement       `json:"announcements"`
 	Notifications []Notification       `json:"notifications"`
 	Issues        []Issue              `json:"issues"`
@@ -41,6 +42,7 @@ type State struct {
 
 func Seed(now time.Time) *State {
 	return &State{
+		Polls:         seedPolls(now),
 		Announcements: seedAnnouncements(now),
 		Issues:        seedIssues(now),
 		Reports:       seedReports(now),

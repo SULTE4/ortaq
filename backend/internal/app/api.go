@@ -281,6 +281,7 @@ func (a *API) routes(m *http.ServeMux) {
 	a.notificationRoutes(m)
 	a.supportRoutes(m)
 	a.announcementRoutes(m)
+	a.pollRoutes(m)
 }
 
 var _ = fmt.Sprintf
