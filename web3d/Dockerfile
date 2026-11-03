@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY web3d/package*.json ./
-RUN npm ci
+RUN npm install --no-audit --no-fund
 COPY web3d/ ./
 RUN npm run build
 FROM nginx:1.28-alpine

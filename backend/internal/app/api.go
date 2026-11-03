@@ -283,4 +283,5 @@ func (a *API) routes(m *http.ServeMux) {
 	a.pollRoutes(m)
 	a.balanceRoutes(m)
 	a.feedbackRoutes(m)
+	a.sceneRoutes(m)
 }

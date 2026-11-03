@@ -1,0 +1,6 @@
+part of 'app.dart';
+extension EmbedUI on _WorkspaceState {
+ String get threeDOrigin=>'${Uri.base.scheme}://${Uri.base.host}:8083';
+ Widget threeDEmbed({bool compact=false})=>ClipRRect(borderRadius:BorderRadius.circular(20),child:HtmlElementView.fromTagName(key:ValueKey('3d-$compact-${api.token}'),tagName:'iframe',onElementCreated:(Object element){final iframe=element as web.HTMLIFrameElement;iframe.src='$threeDOrigin/?embed=${widget.admin?'admin':'resident'}';iframe.title=compact?'Live 3D view of your apartment':'Ortaq 3D · live community view';iframe.style.width='100%';iframe.style.height='100%';iframe.style.border='0';iframe.allow='fullscreen';iframe.addEventListener('load',((web.Event event){iframe.contentWindow?.postMessage(jsonEncode({'type':'ortaq:session','token':api.token}).toJS,threeDOrigin.toJS);}).toJS);}));
+ Widget threeDView()=>Column(crossAxisAlignment:CrossAxisAlignment.start,children:[text('A new perspective on home.',size:28,weight:FontWeight.w700),const SizedBox(height:8),text('A live view of our building. Every change appears within seconds.',color:muted),const SizedBox(height:22),SizedBox(height:math.max(680,MediaQuery.sizeOf(context).height-230),child:threeDEmbed())]);
+}
