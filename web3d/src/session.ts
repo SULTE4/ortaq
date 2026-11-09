@@ -5,9 +5,19 @@ export const embed = new URLSearchParams(location.search).get("embed");
 export const parentOrigins = [
   `http://${location.hostname}:8081`,
   `http://${location.hostname}:8082`,
+  `http://${location.hostname}:8091`,
+  `http://${location.hostname}:8092`,
+  `http://127.0.0.1:8081`,
+  `http://127.0.0.1:8082`,
+  `http://127.0.0.1:8091`,
+  `http://127.0.0.1:8092`,
+  `http://localhost:8081`,
+  `http://localhost:8082`,
+  `http://localhost:8091`,
+  `http://localhost:8092`,
 ];
 export async function request(path: string, token = "", body?: unknown) {
-  const response = await fetch("/api" + path, {
+  const response = await fetch("/api/v1" + path, {
     method: body === undefined ? "GET" : "POST",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -42,12 +52,12 @@ export function useSession() {
     window.addEventListener("message", receive);
     window.parent.postMessage(
       JSON.stringify({ type: "ortaq:ready" }),
-      `http://${location.hostname}:${embed === "admin" ? "8082" : "8081"}`,
+      "*",
     );
     return () => window.removeEventListener("message", receive);
   }, []);
   useEffect(() => {
-    if (!token) return;
+    if (!token || embed === "picker") return;
     let stopped = false,
       pending = false;
     async function sync() {
@@ -55,10 +65,13 @@ export function useSession() {
       pending = true;
       try {
         const admin = embed === "admin" && useView.getState().balances;
-        const data: Snapshot = await request(
+        let data: Snapshot = await request(
           "/scene" + (admin ? "?balances=true" : ""),
           token,
         );
+        if (import.meta.env.DEV && new URLSearchParams(location.search).get('planFixture') === '1') {
+          data = (await import('./planFixture.dev')).withPlanFixture(data);
+        }
         if (!stopped) {
           const current = useView.getState();
           current.set({

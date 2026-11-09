@@ -48,14 +48,7 @@ export interface Poll {
   results?: number[];
 }
 export interface Snapshot {
-  building: {
-    id: number;
-    name: string;
-    address: string;
-    apartments: number;
-    floors: number;
-    entrances: number;
-  };
+  building: import("./buildingModel").ManagedBuilding & { apartments: number; entrances: number };
   issues: Issue[];
   reports: Report[];
   announcements: { id: string; title: string; body: string; at: string }[];

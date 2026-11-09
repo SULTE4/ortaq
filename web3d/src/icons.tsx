@@ -28,6 +28,7 @@ export function Icon({ name }: { name: string }) {
     snow: (
       <path d="M12 2v20M3.3 7l17.4 10M3.3 17 20.7 7M9 4l3 3 3-3M9 20l3-3 3 3" />
     ),
+    settings: <path d="M4 6h16M4 12h16M4 18h16M8 3v6m8 0v6m-6 0v6" />,
     pause: <path d="M8 5v14M16 5v14" />,
     check: <path d="m5 12 4 4L19 6" />,
     sound: (

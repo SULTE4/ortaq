@@ -15,7 +15,7 @@ export function scriptIssue(time: number): Issue {
     title: S.scriptedIssue,
     description: S.scriptedDescription,
     category: "Heating",
-    location: { entrance: 2, floor: 5, area: "" },
+    location: { entrance: 2, floor: 2, area: "" },
     photo: "/media/seed/issue.png",
     status,
     contractor: time >= 30 ? "Astana Plumbing" : "",
@@ -26,16 +26,16 @@ export function scriptIssue(time: number): Issue {
   };
 }
 const shots: { position: Vec3; target: Vec3 }[] = [
-  { position: [-40, 25, 35], target: [0, 5, 1] },
-  { position: [15, 12, 24], target: [0, 6, 2] },
-  { position: [7, 10, 22], target: [0, 6, 2] },
-  { position: [16, 9, 24], target: [-3, 3, 6] },
-  { position: [8, 12, 23], target: [0, 6, 2] },
-  { position: [-30, 21, 28], target: [-12, 5, 0] },
-  { position: [24, 23, 33], target: [0, 6, 1] },
-  { position: [15, 21, 30], target: [0, 8, 0] },
-  { position: [40, 33, 53], target: [-8, 6, -10] },
-  { position: [48, 38, 62], target: [-8, 6, -12] },
+  { position: [40, 32, 48], target: [3.5, 5.2, 2.8] },
+  { position: [32, 18, 27], target: [12.7, 5.7, 0] },
+  { position: [28, 14, 25], target: [12.7, 5.7, 0] },
+  { position: [33, 15, 29], target: [12.7, 5.7, 0] },
+  { position: [29, 15, 26], target: [12.7, 5.7, 0] },
+  { position: [34, 26, 42], target: [-5, 5, 1] },
+  { position: [36, 28, 42], target: [3.5, 5.2, 2.8] },
+  { position: [34, 28, 40], target: [3.5, 5.2, 2.8] },
+  { position: [-55, 65, 100], target: [27, 6, 7] },
+  { position: [-70, 70, 120], target: [27, 6, 7] },
 ];
 export function cameraAt(time: number): { position: Vec3; target: Vec3 } {
   const chapter = chapterAt(time);
