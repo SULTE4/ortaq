@@ -10,7 +10,7 @@ func TestBuildingIsolation(t *testing.T) {
 	var reportID string
 	a.Store.Update(context.Background(), func(s *State) error {
 		reportID = s.Reports[0].ID
-		s.Buildings = append(s.Buildings, Building{2, "Other home", "Astana", 1, 9, 40})
+		s.Buildings = append(s.Buildings, Building{ID: 2, Name: "Other home", Address: "Astana", Entrances: 1, Floors: 9, Apartments: 40})
 		s.Users[0].BuildingID = 2
 		s.Users[2].BuildingID = 2
 		return nil

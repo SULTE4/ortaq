@@ -51,6 +51,7 @@ func (p *Postgres) View(ctx context.Context, f func(*State) error) error {
 	if e := json.Unmarshal(data, &s); e != nil {
 		return e
 	}
+	s.restoreBuildingGeometry()
 	return f(&s)
 }
 
@@ -69,6 +70,7 @@ func (p *Postgres) Update(ctx context.Context, f func(*State) error) error {
 	if e = json.Unmarshal(data, &s); e != nil {
 		return e
 	}
+	s.restoreBuildingGeometry()
 	if e = f(&s); e != nil {
 		return e
 	}
@@ -96,6 +98,7 @@ func (m *Memory) View(ctx context.Context, f func(*State) error) error {
 	if e := json.Unmarshal(m.data, &s); e != nil {
 		return e
 	}
+	s.restoreBuildingGeometry()
 	return f(&s)
 }
 func (m *Memory) Update(ctx context.Context, f func(*State) error) error {
@@ -105,6 +108,7 @@ func (m *Memory) Update(ctx context.Context, f func(*State) error) error {
 	if e := json.Unmarshal(m.data, &s); e != nil {
 		return e
 	}
+	s.restoreBuildingGeometry()
 	if e := f(&s); e != nil {
 		return e
 	}

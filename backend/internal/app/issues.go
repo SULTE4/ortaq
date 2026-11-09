@@ -116,7 +116,7 @@ func seedIssues(now time.Time) []Issue {
 		status := []string{"New", "In Progress", "Resolved"}[i%3]
 		l := Location{i%3 + 1, i%9 + 1, ""}
 		if i == 0 {
-			l = Location{2, 5, ""}
+			l = Location{2, 2, ""}
 		}
 		if i == 3 {
 			l = Location{0, 0, "Gate"}

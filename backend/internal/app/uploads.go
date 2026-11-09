@@ -70,7 +70,7 @@ func (a *API) uploadRoutes(m *http.ServeMux) {
 	})
 	a.route(m, "GET /media/{building}/{name}", true, func(w http.ResponseWriter, r *http.Request, u User) error {
 		path := "/media/" + r.PathValue("building") + "/" + r.PathValue("name")
-		if !validPhoto(path) {
+		if !validPhoto(path) && !planMediaPattern.MatchString(path) {
 			return notFound()
 		}
 		if r.PathValue("building") != "seed" && r.PathValue("building") != fmt.Sprint(u.BuildingID) {

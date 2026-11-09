@@ -2,7 +2,7 @@ package app
 
 import "testing"
 
-const newIssue = `{"title":"Cold radiator","description":"Shared corridor radiator is cold","category":"Heating","location":{"entrance":2,"floor":5,"area":""},"photo":"/media/seed/issue.png"}`
+const newIssue = `{"title":"Cold radiator","description":"Shared corridor radiator is cold","category":"Heating","location":{"entrance":2,"floor":2,"area":""},"photo":"/media/seed/issue.png"}`
 
 func TestReportIssue(t *testing.T) {
 	a := testAPI(t)

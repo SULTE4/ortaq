@@ -25,7 +25,7 @@ func TestApartmentSupport(t *testing.T) {
 	if c, _ := call(t, a, "POST", "/issues/issue-03/support", `{}`, 3); c != 400 {
 		t.Fatal(c)
 	}
-	r := httptest.NewRequest("GET", "/issues/similar?category=Heating&entrance=2&floor=5", nil)
+	r := httptest.NewRequest("GET", "/issues/similar?category=Heating&entrance=2&floor=2", nil)
 	r.Header.Set("Authorization", "Bearer "+a.token(User{ID: 3}))
 	w := httptest.NewRecorder()
 	a.Handler().ServeHTTP(w, r)

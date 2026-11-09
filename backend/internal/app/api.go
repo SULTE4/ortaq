@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -23,6 +24,8 @@ type API struct {
 	UploadDir string
 	Now       func() time.Time
 	Demo      bool
+	geoOnce   sync.Once
+	geo       *geoService
 }
 type failure struct {
 	Code    int
@@ -153,7 +156,7 @@ func (a *API) Handler() http.Handler {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
 			w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		}
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("Referrer-Policy", "no-referrer")
@@ -162,6 +165,13 @@ func (a *API) Handler() http.Handler {
 			return
 		}
 		r.Body = http.MaxBytesReader(w, r.Body, 12<<20)
+		// Keep existing clients working, including the proxy that strips /api.
+		for _, prefix := range []string{"/api/v1", "/v1"} {
+			if strings.HasPrefix(r.URL.Path, prefix+"/") {
+				r.URL.Path = strings.TrimPrefix(r.URL.Path, prefix)
+				break
+			}
+		}
 		m.ServeHTTP(w, r)
 	})
 }
@@ -274,6 +284,7 @@ func (a *API) verify(w http.ResponseWriter, r *http.Request, _ User) error {
 }
 func (a *API) routes(m *http.ServeMux) {
 	a.buildingRoutes(m)
+	a.geoRoutes(m)
 	a.reportRoutes(m)
 	a.issueRoutes(m)
 	a.workflowRoutes(m)
