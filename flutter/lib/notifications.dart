@@ -10,12 +10,13 @@ extension NotificationUI on _WorkspaceState {
         child: IconButton(
             tooltip: copy('ui149'),
             onPressed: () => showNotifications(),
-            icon: const Icon(Icons.notifications_none, size: 22, color: navy)));
+            icon:
+                Icon(Icons.notifications_none, size: 22, color: muted)));
   }
 
   Future<void> showNotifications() async {
     final notifications = data['notifications'] as List? ?? [];
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (c) => Dialog(
             child: ConstrainedBox(
@@ -31,7 +32,7 @@ extension NotificationUI on _WorkspaceState {
                         IconButton(
                             tooltip: copy('ui150'),
                             onPressed: () => Navigator.pop(c),
-                            icon: const Icon(Icons.close))
+                            icon: Icon(Icons.close))
                       ])),
                   if (notifications.isEmpty)
                     Padding(

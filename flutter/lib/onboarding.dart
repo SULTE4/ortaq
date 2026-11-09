@@ -17,26 +17,25 @@ extension OnboardingUI on _WorkspaceState {
   Widget guideView() => SingleChildScrollView(
       padding: const EdgeInsets.all(28),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         text(copy('ui001'), size: 38, weight: FontWeight.w800),
-        const SizedBox(height: 28),
+        SizedBox(height: 28),
         Container(
             height: 190,
             width: double.infinity,
-            decoration: BoxDecoration(
-                color: navy, borderRadius: BorderRadius.circular(4)),
+            decoration: BoxDecoration(color: navy, borderRadius: Radii.card),
             child: const Padding(
                 padding: EdgeInsets.all(20),
                 child: CustomPaint(painter: _BuildingArt()))),
-        const SizedBox(height: 26),
+        SizedBox(height: 26),
         text(copy('ui002'), size: 32, weight: FontWeight.w700),
-        const SizedBox(height: 10),
+        SizedBox(height: 10),
         reading(copy('ui003'), size: 17),
-        const SizedBox(height: 25),
+        SizedBox(height: 25),
         guideStep(Icons.pie_chart_outline, copy('ui004'), copy('ui005')),
         guideStep(Icons.task_alt, copy('ui006'), copy('ui007')),
         guideStep(Icons.how_to_vote_outlined, copy('ui008'), copy('ui009')),
-        const SizedBox(height: 20),
+        SizedBox(height: 20),
         SizedBox(
             width: double.infinity,
             child: button(
@@ -54,27 +53,26 @@ extension OnboardingUI on _WorkspaceState {
         Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-                color: const Color(0xFFE0E7DE),
-                borderRadius: BorderRadius.circular(3)),
+                color: OrtaqColors.surface2, borderRadius: Radii.small),
             child: Icon(icon, color: blue, size: 21)),
-        const SizedBox(width: 14),
+        SizedBox(width: 14),
         Expanded(
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           text(title, weight: FontWeight.w700),
-          const SizedBox(height: 4),
+          SizedBox(height: 4),
           text(body, size: 12, color: muted)
         ]))
       ]));
   Widget feedbackView() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         text(copy('ui011'), size: 28, weight: FontWeight.w700),
-        const SizedBox(height: 12),
+        SizedBox(height: 12),
         text(copy('ui012'), color: muted),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         button(copy('ui013'), () => sendFeedback(),
             icon: Icons.chat_bubble_outline),
-        const SizedBox(height: 22),
+        SizedBox(height: 22),
         if (!widget.admin)
           TextButton(
               onPressed: () => updateView(() => guide = true),
@@ -84,14 +82,15 @@ extension OnboardingUI on _WorkspaceState {
               future: api.request('/feedback'),
               builder: (context, snapshot) => Column(children: [
                     if (snapshot.hasError)
-                      text(copy('ui015', [snapshot.error]), color: Colors.red),
+                      text(copy('ui015', [snapshot.error]),
+                          color: OrtaqColors.newIssue),
                     ...((snapshot.data as List?) ?? []).map((f) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: card(Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               text(f['message']),
-                              const SizedBox(height: 8),
+                              SizedBox(height: 8),
                               text(f['at'].toString().substring(0, 10),
                                   color: muted, size: 12)
                             ]))))
@@ -101,7 +100,7 @@ extension OnboardingUI on _WorkspaceState {
     final message = TextEditingController();
     String error = '';
     bool saving = false;
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -111,7 +110,8 @@ extension OnboardingUI on _WorkspaceState {
                         child:
                             Column(mainAxisSize: MainAxisSize.min, children: [
                           field(message, copy('ui017'), lines: 5),
-                          if (error.isNotEmpty) text(error, color: Colors.red)
+                          if (error.isNotEmpty)
+                            text(error, color: OrtaqColors.newIssue)
                         ])),
                     actions: [
                       TextButton(
@@ -127,10 +127,7 @@ extension OnboardingUI on _WorkspaceState {
                                         method: 'POST',
                                         body: {'message': message.text});
                                     if (dialog.mounted) Navigator.pop(dialog);
-                                    if (mounted)
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(SnackBar(
-                                              content: Text(copy('ui019'))));
+                                    if (mounted) showMessage(copy('ui019'));
                                   } catch (e) {
                                     if (c.mounted)
                                       update(() => error = e
@@ -151,13 +148,7 @@ class _BuildingArt extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final p = Paint();
     final w = size.width, h = size.height;
-    canvas.drawRect(Offset.zero & size, p..color = const Color(0xFF163845));
-    for (var i = 0; i < 12; i++) {
-      canvas.drawCircle(
-          Offset(w * (.06 + (i * .173) % 1), h * (.1 + (i * .071) % .35)),
-          .7,
-          p..color = const Color(0xFF809C9F));
-    }
+    canvas.drawRect(Offset.zero & size, p..color = const Color(0xFFE7EDF3));
     for (var n = 0; n < 3; n++) {
       final x = w * (.06 + n * .29),
           y = h * (.35 + n * .065),
@@ -167,9 +158,9 @@ class _BuildingArt extends CustomPainter {
           Rect.fromLTWH(x, y, bw, bh),
           p
             ..color = [
-              const Color(0xFF47636B),
-              const Color(0xFF74847F),
-              const Color(0xFF355561)
+              const Color(0xFF3E7484),
+              const Color(0xFFB46550),
+              const Color(0xFF2B505C)
             ][n]);
       for (var r = 0; r < 7; r++) {
         for (var c = 0; c < 4; c++) {
@@ -178,11 +169,11 @@ class _BuildingArt extends CustomPainter {
                   y + 10 + r * (bh - 15) / 7, bw * .1, bh * .065),
               p
                 ..color = (r + c + n) % 4 == 0
-                    ? const Color(0xFF203F49)
+                    ? const Color(0xFFBFD6E4)
                     : [
-                        const Color(0xFFE0C18B),
-                        const Color(0xFFB8BB9A),
-                        const Color(0xFFD5AF6F)
+                        OrtaqColors.homeGold,
+                        const Color(0xFFD5E1EA),
+                        const Color(0xFFE8CCA0)
                       ][(r + c) % 3]);
         }
       }
@@ -194,13 +185,13 @@ class _BuildingArt extends CustomPainter {
       ..lineTo(w, h)
       ..lineTo(0, h)
       ..close();
-    canvas.drawPath(snow, p..color = const Color(0xFFBACBC5));
+    canvas.drawPath(snow, p..color = const Color(0xFFF3F6FA));
     canvas.drawRect(Rect.fromLTWH(w * .48, 0, w * .04, h),
-        p..color = const Color(0xFF14323F));
+        p..color = const Color(0xFF2B505C));
     canvas.drawRect(Rect.fromLTWH(0, h * .49, w, h * .045),
-        p..color = const Color(0xFF14323F));
+        p..color = const Color(0xFF2B505C));
     canvas.drawRect(Rect.fromLTWH(w * .45, h * .47, w * .1, h * .03),
-        p..color = const Color(0xFFE2C18A));
+        p..color = OrtaqColors.homeGold);
   }
 
   @override

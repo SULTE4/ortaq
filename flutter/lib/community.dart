@@ -4,39 +4,43 @@ extension CommunityUI on _WorkspaceState {
   Widget announcementsView() =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         text(copy('ui166'), size: 28, weight: FontWeight.w700),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         text(copy('ui167'), color: muted),
-        const SizedBox(height: 24),
+        SizedBox(height: 24),
         if (widget.admin && me?['role'] == 'chairman') ...[
           button(copy('ui168'), () => newAnnouncement(),
               icon: Icons.campaign_outlined),
-          const SizedBox(height: 20)
+          SizedBox(height: 20)
         ],
-        ...(data['announcements'] as List? ?? []).map((a) => Padding(
-            padding: const EdgeInsets.only(bottom: 16),
-            child: card(
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                const Icon(Icons.campaign_outlined, color: blue, size: 22),
-                const SizedBox(width: 10),
-                text(copy('ui169'),
-                    size: 10, color: blue, weight: FontWeight.w700),
-                const Spacer(),
-                text(a['at'].toString().substring(0, 10),
-                    size: 11, color: muted)
-              ]),
-              const SizedBox(height: 18),
-              text(a['title'], size: 21, weight: FontWeight.w700),
-              const SizedBox(height: 12),
-              text(a['body'], color: muted)
-            ]))))
+        ...revealList(
+            'announcements',
+            (data['announcements'] as List? ?? []).map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: card(Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.campaign_outlined,
+                            color: blue, size: 22),
+                        SizedBox(width: 10),
+                        text(copy('ui169'),
+                            size: 10, color: blue, weight: FontWeight.w700),
+                        const Spacer(),
+                        text(a['at'].toString().substring(0, 10),
+                            size: 11, color: muted)
+                      ]),
+                      SizedBox(height: 18),
+                      text(a['title'], size: 21, weight: FontWeight.w700),
+                      SizedBox(height: 12),
+                      text(a['body'], color: muted)
+                    ])))))
       ]);
   Future<void> newAnnouncement() async {
     final title = TextEditingController(text: copy('defaultAnnouncementTitle')),
         body = TextEditingController(text: copy('defaultAnnouncementBody'));
     String message = '';
     bool saving = false;
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -49,7 +53,7 @@ extension CommunityUI on _WorkspaceState {
                           field(body, copy('ui172'), lines: 5),
                           text(copy('ui173'), color: muted),
                           if (message.isNotEmpty)
-                            text(message, color: Colors.red)
+                            text(message, color: OrtaqColors.newIssue)
                         ])),
                     actions: [
                       TextButton(

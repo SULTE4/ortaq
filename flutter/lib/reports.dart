@@ -6,7 +6,7 @@ extension ReportsUI on _WorkspaceState {
           ? r['corrections'].last['expenses']
           : r['expenses'];
   String kzt(num n) =>
-      '₸ ${n.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')}';
+      '₸\u2009${n.round().toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (m) => '${m[1]} ')}';
   Future<String?> pickPhoto() async {
     final f = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -22,14 +22,14 @@ extension ReportsUI on _WorkspaceState {
     final reports = data['reports'] as List? ?? [];
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       text(copy('ui119'), size: 28, weight: FontWeight.w700),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       text(copy('ui120'), color: muted),
-      const SizedBox(height: 24),
+      SizedBox(height: 24),
       if (widget.admin) ...[
         button(copy('ui121'), () => editReport()),
-        const SizedBox(height: 20)
+        SizedBox(height: 20)
       ],
-      ...reports.map((r) {
+      ...revealList('reports', reports.map((r) {
         final items = currentExpenses(r);
         final total =
             items.fold<num>(0, (sum, e) => sum + (e['amount'] as num));
@@ -42,43 +42,44 @@ extension ReportsUI on _WorkspaceState {
                     child: text(r['month'], size: 21, weight: FontWeight.w700)),
                 text(copy('ui122'),
                     size: 10,
-                    color: const Color(0xFF1A9474),
+                    color: OrtaqColors.resolved,
                     weight: FontWeight.w700)
               ]),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               text(kzt(total), size: 30, weight: FontWeight.w700),
               text(copy('ui123', [items.length]), color: muted),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
               categoryChart(items),
-              const SizedBox(height: 20),
-              ...items.map((e) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  leading: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                          color: paper,
-                          borderRadius: BorderRadius.circular(12)),
-                      child: const Icon(Icons.receipt_long,
-                          color: blue, size: 20)),
-                  title: text(
-                      e['description']?.isEmpty ?? true
-                          ? e['category']
-                          : e['description'],
-                      weight: FontWeight.w600),
-                  subtitle: text(e['date'], color: muted, size: 12),
-                  trailing: text(kzt(e['amount']), weight: FontWeight.w700),
-                  onTap: () => receipt(e))),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
+              ...revealList(
+                  'expenses',
+                  items.map((e) => ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                              color: paper, borderRadius: Radii.field),
+                          child: Icon(Icons.receipt_long,
+                              color: blue, size: 20)),
+                      title: text(
+                          e['description']?.isEmpty ?? true
+                              ? e['category']
+                              : e['description'],
+                          weight: FontWeight.w600),
+                      subtitle: text(e['date'], color: muted, size: 12),
+                      trailing: text(kzt(e['amount']), weight: FontWeight.w700),
+                      onTap: () => receipt(e)))),
+              SizedBox(height: 20),
               ...((r['corrections'] as List? ?? []).map((c) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
                   child: text(copy('ui124', [c['note']]),
-                      color: const Color(0xFFB27910))))),
+                      color: OrtaqColors.inProgress)))),
               if (widget.admin)
                 TextButton(
                     onPressed: () => editReport(existing: r),
                     child: Text(copy('ui125')))
             ])));
-      })
+      }))
     ]);
   }
 
@@ -100,7 +101,7 @@ extension ReportsUI on _WorkspaceState {
                 text(copy('ui126'), size: 24, weight: FontWeight.w700),
                 text(copy('ui127'), size: 10, color: muted)
               ])))),
-      const SizedBox(height: 18),
+      SizedBox(height: 18),
       ...groups.entries.toList().asMap().entries.map((row) => Padding(
           padding: const EdgeInsets.only(bottom: 10),
           child: Row(children: [
@@ -109,14 +110,14 @@ extension ReportsUI on _WorkspaceState {
                 height: 8,
                 decoration: BoxDecoration(
                     color: _Donut.colors[row.key % 6], shape: BoxShape.circle)),
-            const SizedBox(width: 10),
+            SizedBox(width: 10),
             Expanded(child: text(row.value.key, size: 12)),
             text(kzt(row.value.value), size: 12, weight: FontWeight.w600)
           ])))
     ]);
   }
 
-  Future<void> receipt(dynamic expense) => showDialog<void>(
+  Future<void> receipt(dynamic expense) => showCalmDialog<void>(
       context: context,
       builder: (c) => Dialog(
           child: ConstrainedBox(
@@ -136,14 +137,14 @@ extension ReportsUI on _WorkspaceState {
                       IconButton(
                           tooltip: copy('ui145'),
                           onPressed: () => Navigator.pop(c),
-                          icon: const Icon(Icons.close))
+                          icon: Icon(Icons.close))
                     ]),
                     text(copy('ui128', [expense['date']]), color: muted),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 18),
                     Image.network(api.media(expense['receipt']),
                         headers: {'Authorization': 'Bearer ${api.token}'},
                         errorBuilder: (c, e, s) =>
-                            text(copy('ui129'), color: Colors.red))
+                            text(copy('ui129'), color: OrtaqColors.newIssue))
                   ])))));
   Future<void> editReport({dynamic existing}) async {
     final month = TextEditingController(
@@ -156,7 +157,7 @@ extension ReportsUI on _WorkspaceState {
     ];
     String message = '';
     bool uploading = false;
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -184,8 +185,8 @@ extension ReportsUI on _WorkspaceState {
                                       tooltip: copy('ui146'),
                                       onPressed: () =>
                                           update(() => items.removeAt(e.key)),
-                                      icon: const Icon(Icons.close)))),
-                              const SizedBox(height: 10),
+                                      icon: Icon(Icons.close)))),
+                              SizedBox(height: 10),
                               OutlinedButton.icon(
                                   onPressed: uploading
                                       ? null
@@ -195,12 +196,12 @@ extension ReportsUI on _WorkspaceState {
                                           if (item != null)
                                             update(() => items.add(item));
                                         },
-                                  icon: const Icon(Icons.add),
+                                  icon: Icon(Icons.add),
                                   label: Text(copy('ui134'))),
-                              const SizedBox(height: 14),
+                              SizedBox(height: 14),
                               text(copy('ui135'), color: muted),
                               if (message.isNotEmpty)
-                                text(message, color: Colors.red)
+                                text(message, color: OrtaqColors.newIssue)
                             ]))),
                     actions: [
                       TextButton(
@@ -248,7 +249,7 @@ extension ReportsUI on _WorkspaceState {
         description = TextEditingController();
     String cat = 'Cleaning', photo = '', message = '';
     bool uploading = false;
-    return showDialog<Map<String, dynamic>>(
+    return showCalmDialog<Map<String, dynamic>>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -259,7 +260,7 @@ extension ReportsUI on _WorkspaceState {
                             child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                              DropdownButtonFormField<String>(
+                              CalmSelect<String>(
                                   initialValue: cat,
                                   items: [
                                     'Cleaning',
@@ -273,7 +274,7 @@ extension ReportsUI on _WorkspaceState {
                                           value: v, child: Text(v)))
                                       .toList(),
                                   onChanged: (v) => cat = v!),
-                              const SizedBox(height: 16),
+                              SizedBox(height: 16),
                               field(amount, copy('ui139')),
                               field(date, copy('ui140')),
                               field(description, copy('ui083')),
@@ -303,7 +304,7 @@ extension ReportsUI on _WorkspaceState {
                                       () => photo = '/media/seed/receipt.png'),
                                   child: Text(copy('ui143'))),
                               if (message.isNotEmpty)
-                                text(message, color: Colors.red)
+                                text(message, color: OrtaqColors.newIssue)
                             ]))),
                     actions: [
                       TextButton(
@@ -328,13 +329,13 @@ extension ReportsUI on _WorkspaceState {
 class _Donut extends CustomPainter {
   final List<double> values;
   _Donut(this.values);
-  static const colors = [
-    Color(0xFF315E6E),
-    Color(0xFF70A79A),
-    Color(0xFFD4B476),
-    Color(0xFF8FA7B0),
-    Color(0xFFC39C89),
-    Color(0xFFADBAA9)
+  static List<Color> get colors => [
+    OrtaqColors.teal,
+    OrtaqColors.resolved,
+    OrtaqColors.homeGold,
+    OrtaqColors.muted,
+    OrtaqColors.brick,
+    OrtaqColors.snow
   ];
   @override
   void paint(Canvas canvas, Size size) {

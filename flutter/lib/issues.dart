@@ -2,17 +2,18 @@ part of 'app.dart';
 
 extension IssuesUI on _WorkspaceState {
   Color statusColor(String status) => status == 'Resolved'
-      ? const Color(0xFF1C9A79)
+      ? OrtaqColors.resolved
       : status == 'In Progress'
-          ? const Color(0xFFD19A2A)
-          : const Color(0xFFE56870);
-  String location(dynamic l) => l['area'] != ''
-      ? l['area']
-      : copy('location', [l['entrance'], l['floor']]);
+          ? OrtaqColors.inProgress
+          : OrtaqColors.newIssue;
+  String location(dynamic l) =>
+      (l['area'] != null && '${l['area']}'.isNotEmpty)
+          ? '${l['area']}'
+          : copy('location', [l['entrance'], l['floor']]);
   Widget issueCard(dynamic issue) => Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: InkWell(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: Radii.card,
           onTap: () => issueDetails(issue),
           child: card(
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -23,26 +24,33 @@ extension IssuesUI on _WorkspaceState {
                   decoration: BoxDecoration(
                       color: statusColor(issue['status']),
                       shape: BoxShape.circle)),
-              const SizedBox(width: 8),
-              text(issue['status'],
-                  color: statusColor(issue['status']),
-                  size: 11,
-                  weight: FontWeight.w700),
+              SizedBox(width: 8),
+              CalmSwitcher(
+                  child: Container(
+                      key: ValueKey(issue['status']),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 4),
+                      decoration:
+                          BoxDecoration(color: paper, borderRadius: Radii.pill),
+                      child: text(issue['status'],
+                          color: statusColor(issue['status']),
+                          size: 11,
+                          weight: FontWeight.w700))),
               const Spacer(),
               text(issue['category'], size: 11, color: muted)
             ]),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
             text(issue['title'], size: 17, weight: FontWeight.w700),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             text(location(issue['location']), size: 12, color: muted),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Row(children: [
-              const Icon(Icons.people_outline, size: 17, color: muted),
-              const SizedBox(width: 6),
+              Icon(Icons.people_outline, size: 17, color: muted),
+              SizedBox(width: 6),
               text(copy('ui058', [(issue['supporters'] as List).length]),
                   size: 12, color: muted),
               const Spacer(),
-              const Icon(Icons.arrow_forward, size: 17, color: blue)
+              Icon(Icons.arrow_forward, size: 17, color: blue)
             ])
           ]))));
   Widget issuesView() {
@@ -50,18 +58,18 @@ extension IssuesUI on _WorkspaceState {
     if (widget.admin) return issueBoard(issues);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       text(copy('ui059'), size: 28, weight: FontWeight.w700),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       text(copy('ui060'), color: muted),
-      const SizedBox(height: 20),
+      SizedBox(height: 20),
       if (!widget.admin) ...[
         button(copy('ui061'), () => reportIssue(), icon: Icons.add),
-        const SizedBox(height: 20)
+        SizedBox(height: 20)
       ],
-      ...issues.map(issueCard)
+      ...revealList('issues', issues.map(issueCard))
     ]);
   }
 
-  Future<void> issueDetails(dynamic issue) => showDialog<void>(
+  Future<void> issueDetails(dynamic issue) => showCalmDialog<void>(
       context: context,
       builder: (c) => Dialog(
           child: ConstrainedBox(
@@ -79,7 +87,7 @@ extension IssuesUI on _WorkspaceState {
                           IconButton(
                               tooltip: copy('ui090'),
                               onPressed: () => Navigator.pop(c),
-                              icon: const Icon(Icons.close))
+                              icon: Icon(Icons.close))
                         ]),
                         text(
                             copy('ui062', [
@@ -87,9 +95,9 @@ extension IssuesUI on _WorkspaceState {
                               issue['category']
                             ]),
                             color: muted),
-                        const SizedBox(height: 18),
+                        SizedBox(height: 18),
                         ClipRRect(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: Radii.small,
                             child: Image.network(api.media(issue['photo']),
                                 headers: {
                                   'Authorization': 'Bearer ${api.token}'
@@ -98,10 +106,10 @@ extension IssuesUI on _WorkspaceState {
                                 width: double.infinity,
                                 fit: BoxFit.cover,
                                 errorBuilder: (c, e, s) =>
-                                    const Icon(Icons.image_not_supported))),
-                        const SizedBox(height: 18),
+                                    Icon(Icons.image_not_supported))),
+                        SizedBox(height: 18),
                         text(issue['description']),
-                        const SizedBox(height: 16),
+                        SizedBox(height: 16),
                         if (!widget.admin && issue['status'] != 'Resolved')
                           ((issue['supporters'] as List)
                                   .contains(me?['apartment'])
@@ -120,7 +128,7 @@ extension IssuesUI on _WorkspaceState {
                                     await refresh();
                                   });
                                 }, icon: Icons.people_outline)),
-                        const SizedBox(height: 20),
+                        SizedBox(height: 20),
                         text(copy('ui065'),
                             size: 11, color: muted, weight: FontWeight.w700),
                         ...((issue['history'] as List).map((h) => ListTile(
@@ -156,9 +164,9 @@ extension IssuesUI on _WorkspaceState {
   Widget issueBoard(List<dynamic> issues) =>
       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         text(copy('ui069'), size: 28, weight: FontWeight.w700),
-        const SizedBox(height: 8),
+        SizedBox(height: 8),
         text(copy('ui070'), color: muted),
-        const SizedBox(height: 26),
+        SizedBox(height: 26),
         SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
@@ -170,54 +178,68 @@ extension IssuesUI on _WorkspaceState {
                             d.data['status'] != status,
                         onAcceptWithDetails: (d) =>
                             updateIssue(d.data, target: status),
-                        builder: (context, candidate, rejected) => Container(
-                            width: 300,
-                            margin: const EdgeInsets.only(right: 18),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                                color: candidate.isNotEmpty
-                                    ? blue.withValues(alpha: .08)
-                                    : const Color(0xFFE2E7E0),
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(
+                        builder: (context, candidate, rejected) =>
+                            AnimatedContainer(
+                                duration: CalmMotion.duration(
+                                    context, CalmMotion.enter),
+                                curve: Curves.easeOutCubic,
+                                width: 300,
+                                margin: const EdgeInsets.only(right: 18),
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
                                     color: candidate.isNotEmpty
-                                        ? blue
-                                        : Colors.transparent)),
-                            child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(children: [
-                                    Icon(Icons.circle,
-                                        size: 9, color: statusColor(status)),
-                                    const SizedBox(width: 9),
-                                    text(status, weight: FontWeight.w700),
-                                    const Spacer(),
-                                    text(
-                                        copy('ui015', [
+                                        ? blue.withValues(alpha: .08)
+                                        : OrtaqColors.surface,
+                                    borderRadius: Radii.card,
+                                    border: Border.all(
+                                        color: candidate.isNotEmpty
+                                            ? blue
+                                            : Colors.transparent)),
+                                child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(children: [
+                                        Icon(Icons.circle,
+                                            size: 9,
+                                            color: statusColor(status)),
+                                        SizedBox(width: 9),
+                                        text(status, weight: FontWeight.w700),
+                                        const Spacer(),
+                                        text(
+                                            copy('ui015', [
+                                              issues
+                                                  .where((i) =>
+                                                      i['status'] == status)
+                                                  .length
+                                            ]),
+                                            color: muted)
+                                      ]),
+                                      SizedBox(height: 20),
+                                      ...revealList(
+                                          'board-$status',
                                           issues
                                               .where(
                                                   (i) => i['status'] == status)
-                                              .length
-                                        ]),
-                                        color: muted)
-                                  ]),
-                                  const SizedBox(height: 20),
-                                  ...issues
-                                      .where((i) => i['status'] == status)
-                                      .map((i) => Draggable<
-                                              Map<String, dynamic>>(
-                                          data: Map<String, dynamic>.from(i),
-                                          maxSimultaneousDrags:
-                                              me?['role'] == 'chairman' ? 1 : 0,
-                                          feedback: Material(
-                                              color: Colors.transparent,
-                                              child: SizedBox(
-                                                  width: 270,
-                                                  child: issueCard(i))),
-                                          childWhenDragging: Opacity(
-                                              opacity: .3, child: issueCard(i)),
-                                          child: issueCard(i)))
-                                ]))))
+                                              .map((i) => Draggable<
+                                                      Map<String, dynamic>>(
+                                                  data:
+                                                      Map<String, dynamic>.from(
+                                                          i),
+                                                  maxSimultaneousDrags:
+                                                      me?['role'] == 'chairman'
+                                                          ? 1
+                                                          : 0,
+                                                  feedback: Material(
+                                                      color: Colors.transparent,
+                                                      child: SizedBox(
+                                                          width: 270,
+                                                          child: issueCard(i))),
+                                                  childWhenDragging: Opacity(
+                                                      opacity: .3,
+                                                      child: issueCard(i)),
+                                                  child: issueCard(i))))
+                                    ]))))
                     .toList()))
       ]);
   Future<void> updateIssue(dynamic issue, {String? target}) async {
@@ -232,7 +254,7 @@ extension IssuesUI on _WorkspaceState {
         photo = '',
         message = '';
     bool saving = false;
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -244,15 +266,15 @@ extension IssuesUI on _WorkspaceState {
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                               text(issue['title'], weight: FontWeight.w700),
-                              const SizedBox(height: 20),
-                              DropdownButtonFormField<String>(
+                              SizedBox(height: 20),
+                              CalmSelect<String>(
                                   initialValue: status,
                                   items: ['New', 'In Progress', 'Resolved']
                                       .map((v) => DropdownMenuItem(
                                           value: v, child: Text(v)))
                                       .toList(),
                                   onChanged: (v) => update(() => status = v!)),
-                              const SizedBox(height: 14),
+                              SizedBox(height: 14),
                               field(contractor, copy('ui072')),
                               field(note, copy('ui073'), lines: 2),
                               if (status == 'Resolved')
@@ -284,7 +306,7 @@ extension IssuesUI on _WorkspaceState {
                                         () => photo = '/media/seed/result.png'),
                                     child: Text(copy('ui076'))),
                               if (message.isNotEmpty)
-                                text(message, color: Colors.red)
+                                text(message, color: OrtaqColors.newIssue)
                             ]))),
                     actions: [
                       TextButton(
@@ -333,9 +355,9 @@ extension IssuesUI on _WorkspaceState {
     if (matches.isEmpty) return [];
     return [
       text(copy('ui079'), size: 13, weight: FontWeight.w700, color: blue),
-      const SizedBox(height: 8),
+      SizedBox(height: 8),
       ...matches.map((i) => Card(
-          color: const Color(0xFFE5ECE5),
+          color: OrtaqColors.surface2,
           child: ListTile(
               title: text(i['title'], size: 13, weight: FontWeight.w600),
               subtitle:
@@ -346,7 +368,7 @@ extension IssuesUI on _WorkspaceState {
                     issueDetails(i);
                   },
                   child: Text(copy('ui081')))))),
-      const SizedBox(height: 16)
+      SizedBox(height: 16)
     ];
   }
 
@@ -355,9 +377,9 @@ extension IssuesUI on _WorkspaceState {
         description = TextEditingController(text: copy('defaultIssueBody'));
     String category = 'Heating', area = '', photo = '', message = '';
     int entrance = math.min(2, building?['entrances'] as int? ?? 3),
-        floor = math.min(5, building?['floors'] as int? ?? 9);
+        floor = math.min(2, building?['floors'] as int? ?? 9);
     bool saving = false;
-    await showDialog<void>(
+    await showCalmDialog<void>(
         context: context,
         builder: (dialog) => StatefulBuilder(
             builder: (c, update) => AlertDialog(
@@ -371,7 +393,7 @@ extension IssuesUI on _WorkspaceState {
                                 children: [
                               field(title, copy('ui082')),
                               field(description, copy('ui083'), lines: 3),
-                              DropdownButtonFormField<String>(
+                              CalmSelect<String>(
                                   initialValue: category,
                                   decoration:
                                       InputDecoration(labelText: copy('ui091')),
@@ -389,8 +411,8 @@ extension IssuesUI on _WorkspaceState {
                                       .toList(),
                                   onChanged: (v) =>
                                       update(() => category = v!)),
-                              const SizedBox(height: 14),
-                              DropdownButtonFormField<String>(
+                              SizedBox(height: 14),
+                              CalmSelect<String>(
                                   initialValue: area,
                                   decoration:
                                       InputDecoration(labelText: copy('ui092')),
@@ -408,10 +430,10 @@ extension IssuesUI on _WorkspaceState {
                                       .toList(),
                                   onChanged: (v) => update(() => area = v!)),
                               if (area.isEmpty) ...[
-                                const SizedBox(height: 14),
+                                SizedBox(height: 14),
                                 Row(children: [
                                   Expanded(
-                                      child: DropdownButtonFormField<int>(
+                                      child: CalmSelect<int>(
                                           initialValue: entrance,
                                           decoration: InputDecoration(
                                               labelText: copy('ui093')),
@@ -423,9 +445,9 @@ extension IssuesUI on _WorkspaceState {
                                                       copy('ui015', [i + 1])))),
                                           onChanged: (v) =>
                                               update(() => entrance = v!))),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: 12),
                                   Expanded(
-                                      child: DropdownButtonFormField<int>(
+                                      child: CalmSelect<int>(
                                           initialValue: floor,
                                           decoration: InputDecoration(
                                               labelText: copy('ui094')),
@@ -439,7 +461,7 @@ extension IssuesUI on _WorkspaceState {
                                               update(() => floor = v!)))
                                 ])
                               ],
-                              const SizedBox(height: 20),
+                              SizedBox(height: 20),
                               ...similarIssueWidgets(
                                   category, area, entrance, floor, dialog),
                               OutlinedButton.icon(
@@ -469,7 +491,7 @@ extension IssuesUI on _WorkspaceState {
                                       () => photo = '/media/seed/issue.png'),
                                   child: Text(copy('ui087'))),
                               if (message.isNotEmpty)
-                                text(message, color: Colors.red)
+                                text(message, color: OrtaqColors.newIssue)
                             ]))),
                     actions: [
                       TextButton(

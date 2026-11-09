@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 class ApiError implements Exception {
@@ -49,6 +50,29 @@ class Api {
         .add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
     final value = await _send(request);
     return value['url'];
+  }
+
+  Future<Map<String, dynamic>> uploadPlan(
+      String key, List<int> bytes, String filename) async {
+    final request = http.MultipartRequest('POST',
+        Uri.parse('$base/v1/building/plans/${Uri.encodeComponent(key)}'));
+    request.files
+        .add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    return Map<String, dynamic>.from(await _send(request));
+  }
+
+  Future<Uint8List> planBytes(String path) async {
+    if (!RegExp(
+            r'^/api/v1/media/[1-9][0-9]*/plan-(?:[1-9][0-9]*-)?[0-9]+-[a-f0-9]+\.(png|jpg|webp|pdf)$')
+        .hasMatch(path)) {
+      throw Exception(message('planLoadError'));
+    }
+    final response = await http.get(Uri.parse('${Uri.base.origin}$path'),
+        headers: {
+          'Authorization': 'Bearer $token'
+        }).timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) throw Exception(message('planLoadError'));
+    return response.bodyBytes;
   }
 
   Future<int> importBalances(List<int> bytes, String filename) async {

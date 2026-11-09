@@ -1,3 +1,4 @@
+import 'building_plans.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:convert';
@@ -5,11 +6,13 @@ import 'dart:js_interop';
 import 'package:web/web.dart' as web;
 import 'package:flutter/material.dart';
 import 'api.dart';
+import 'design.dart';
 import 'package:file_picker/file_picker.dart';
 import 'strings_resident.dart';
 import 'strings_admin.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 part 'building.dart';
+part 'plan_images.dart';
 part 'reports.dart';
 part 'issues.dart';
 part 'notifications.dart';
@@ -20,10 +23,11 @@ part 'onboarding.dart';
 part 'dashboard.dart';
 part 'embed.dart';
 
-const navy = Color(0xFF14323F),
-    blue = Color(0xFF315E6E),
-    paper = Color(0xFFEDF0EA),
-    muted = Color(0xFF536B72);
+Color get navy => OrtaqColors.surface;
+Color get blue => OrtaqColors.linkAccent;
+Color get paper => OrtaqColors.night;
+Color get snow => OrtaqColors.snow;
+Color get muted => OrtaqColors.muted;
 bool adminCopy = false;
 String copy(String key, [List<Object?> values = const []]) {
   var value = (adminCopy ? adminStrings : residentStrings)[key] ?? key;
@@ -40,36 +44,45 @@ class OrtaqApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ortaq',
-      theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-              seedColor: navy, primary: navy, surface: Colors.white),
-          scaffoldBackgroundColor: paper,
-          fontFamily: 'LibreFranklin',
-          fontFamilyFallback: const ['OrtaqSans'],
-          textTheme: const TextTheme(
-              headlineLarge: TextStyle(
-                  fontSize: 32, fontWeight: FontWeight.w700, color: navy),
-              headlineMedium: TextStyle(
-                  fontSize: 25, fontWeight: FontWeight.w700, color: navy),
-              titleLarge: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.w700, color: navy),
-              bodyMedium: TextStyle(fontSize: 14, height: 1.5, color: navy)),
-          inputDecorationTheme: InputDecorationTheme(
-              filled: true,
-              fillColor: paper,
-              border: OutlineInputBorder(
-                  borderSide: BorderSide.none,
-                  borderRadius: BorderRadius.circular(4))),
-          filledButtonTheme: FilledButtonThemeData(
-              style: FilledButton.styleFrom(
-                  backgroundColor: navy,
-                  foregroundColor: const Color(0xFFF1F2E8),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(4))))),
+      theme: ortaqTheme(),
+      builder: (context, child) => _MotionPreference(child: child!),
       home: Workspace(admin: admin));
+}
+
+// Flutter web does not expose the browser motion preference on every SDK.
+class _MotionPreference extends StatefulWidget {
+  final Widget child;
+  const _MotionPreference({required this.child});
+  @override
+  State<_MotionPreference> createState() => _MotionPreferenceState();
+}
+
+class _MotionPreferenceState extends State<_MotionPreference> {
+  final preference = web.window.matchMedia('(prefers-reduced-motion: reduce)');
+  late final JSFunction listener;
+  @override
+  void initState() {
+    super.initState();
+    listener = ((web.Event event) {
+      if (mounted) setState(() {});
+    }).toJS;
+    preference.addEventListener('change', listener);
+  }
+
+  @override
+  void dispose() {
+    preference.removeEventListener('change', listener);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return MediaQuery(
+        data: media.copyWith(
+            disableAnimations: media.disableAnimations || preference.matches),
+        child: widget.child);
+  }
 }
 
 class Workspace extends StatefulWidget {
@@ -88,7 +101,11 @@ class _WorkspaceState extends State<Workspace> {
   Map<String, dynamic> data = {};
   Map<String, dynamic>? me, building;
   String page = 'home', error = '';
-  bool busy = false, requested = false, guide = false, prefsReady = false;
+  bool busy = false,
+      requested = false,
+      guide = false,
+      prefsReady = false,
+      newResident = false;
   Timer? timer;
   Map<String, String> get s => widget.admin ? adminStrings : residentStrings;
   @override
@@ -132,8 +149,8 @@ class _WorkspaceState extends State<Workspace> {
     final v = await api.request('/auth/verify', method: 'POST', body: {
       'phone': phone.text,
       'code': code.text,
-      'invite': invite.text,
-      'name': name.text
+      if (!widget.admin && newResident) 'invite': invite.text,
+      if (!widget.admin && newResident) 'name': name.text
     });
     final u = Map<String, dynamic>.from(v['user']);
     if (widget.admin && u['role'] == 'resident') throw Exception(copy('ui175'));
@@ -154,35 +171,71 @@ class _WorkspaceState extends State<Workspace> {
 
   Widget text(String value,
           {double size = 14,
-          Color color = navy,
+          Color? color,
           FontWeight weight = FontWeight.normal}) =>
       Text(value,
           style: TextStyle(
               fontSize: size,
-              color: color,
+              color: color ?? snow,
               fontWeight: weight,
-              height: 1.4,
-              letterSpacing: size >= 28 ? -size * .045 : -.15));
-  Widget reading(String value, {double size = 17, Color color = muted}) =>
+              height: 1.38,
+              letterSpacing: size >= 28 ? -size * .04 : -.15));
+  Widget reading(String value, {double size = 17, Color? color}) =>
       Text(value,
           style: TextStyle(
               fontFamily: 'SourceSerif',
               fontFamilyFallback: const ['OrtaqSans'],
               fontSize: size,
               height: 1.5,
-              color: color));
-  Widget card(Widget child, {Color color = Colors.white}) => Container(
+              color: color ?? muted));
+  final revealed = <String>{};
+  final counted = <String>{};
+  Widget reveal(String id, Widget child, {int index = 0}) => CalmEnter(
+      key: ValueKey(id), animate: revealed.add(id), index: index, child: child);
+  Widget count(String id, num value, Widget Function(num) builder,
+          {String? semanticLabel}) =>
+      CalmCount(
+          key: ValueKey(id),
+          value: value,
+          animate: counted.add(id),
+          semanticLabel: semanticLabel,
+          builder: builder);
+  Iterable<Widget> revealList(String group, Iterable<Widget> children) =>
+      children.indexed.map(
+          (entry) => reveal('$group-${entry.$1}', entry.$2, index: entry.$1));
+  Widget card(Widget child, {Color? color}) => AnimatedContainer(
+      duration: CalmMotion.duration(context, CalmMotion.enter),
+      curve: Curves.easeOutCubic,
       width: double.infinity,
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-          color: color, borderRadius: BorderRadius.circular(4), border: null),
+          color: color ?? navy,
+          borderRadius: Radii.card,
+          border: Border.all(color: OrtaqColors.hairline),
+          boxShadow: [
+            BoxShadow(
+                color: const Color(0xFF121C2A).withValues(alpha: .045),
+                blurRadius: 18,
+                offset: const Offset(0, 4))
+          ]),
       child: child);
-  Widget field(TextEditingController c, String label, {int lines = 1}) =>
+  void showMessage(String message) => ScaffoldMessenger.of(context)
+      .showSnackBar(SnackBar(content: Text(message)),
+          snackBarAnimationStyle: MediaQuery.disableAnimationsOf(context)
+              ? AnimationStyle.noAnimation
+              : const AnimationStyle(
+                  duration: CalmMotion.enter,
+                  reverseDuration: CalmMotion.enter));
+  Widget field(TextEditingController c, String label,
+          {int lines = 1, VoidCallback? onSubmitted}) =>
       Padding(
           padding: const EdgeInsets.only(bottom: 14),
           child: TextField(
               controller: c,
               maxLines: lines,
+              textInputAction:
+                  onSubmitted == null ? null : TextInputAction.done,
+              onSubmitted: onSubmitted == null ? null : (_) => onSubmitted(),
               decoration: InputDecoration(labelText: label)));
   Widget button(String label, VoidCallback onPressed, {IconData? icon}) =>
       FilledButton(
@@ -190,7 +243,7 @@ class _WorkspaceState extends State<Workspace> {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             if (icon != null) ...[
               Icon(icon, size: 18),
-              const SizedBox(width: 8)
+              SizedBox(width: 8)
             ],
             Text(label)
           ]));
@@ -204,25 +257,50 @@ class _WorkspaceState extends State<Workspace> {
                   children: [
                     Row(children: [
                       windowMark(size: 24),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       text(copy('ui001'), size: 36, weight: FontWeight.w500)
                     ]),
-                    const SizedBox(height: 10),
+                    SizedBox(height: 10),
                     text(widget.admin ? copy('ui177') : copy('ui178'),
                         size: 10, color: blue, weight: FontWeight.w700),
-                    const SizedBox(height: 44),
+                    SizedBox(height: 44),
                     text(s['login']!, size: 32, weight: FontWeight.w700),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
                     text(s['subtitle']!, color: muted),
-                    const SizedBox(height: 30),
-                    field(phone, copy('ui179')),
-                    if (requested) ...[
-                      field(code, copy('ui180')),
-                      if (!widget.admin) ...[
-                        field(invite, copy('ui181')),
-                        field(name, copy('ui182'))
-                      ]
+                    SizedBox(height: 30),
+                    if (!widget.admin) ...[
+                      Wrap(spacing: 10, runSpacing: 8, children: [
+                        ChoiceChip(
+                            chipAnimationStyle: CalmMotion.chipStyle(context),
+                            label: Text(copy('returningResident')),
+                            selected: !newResident,
+                            onSelected: busy
+                                ? null
+                                : (_) => updateView(() {
+                                      newResident = false;
+                                      error = '';
+                                    })),
+                        ChoiceChip(
+                            chipAnimationStyle: CalmMotion.chipStyle(context),
+                            label: Text(copy('newResident')),
+                            selected: newResident,
+                            onSelected: busy
+                                ? null
+                                : (_) => updateView(() {
+                                      newResident = true;
+                                      error = '';
+                                    }))
+                      ]),
+                      SizedBox(height: 20)
                     ],
+                    field(phone, copy('ui179')),
+                    if (!widget.admin && newResident) ...[
+                      field(invite, copy('ui181')),
+                      field(name, copy('ui182'))
+                    ],
+                    if (requested)
+                      field(code, copy('ui180'),
+                          onSubmitted: () => action(login)),
                     button(
                         requested ? copy('ui183') : copy('ui184'),
                         () => action(() async {
@@ -240,19 +318,22 @@ class _WorkspaceState extends State<Workspace> {
                               }
                             }),
                         icon: Icons.arrow_forward),
-                    const SizedBox(height: 26),
+                    SizedBox(height: 26),
                     text(widget.admin ? copy('ui185') : copy('ui186'),
                         size: 12, color: muted),
                     if (error.isNotEmpty)
                       Padding(
                           padding: const EdgeInsets.only(top: 16),
-                          child: text(error, color: Colors.red))
+                          child: text(error, color: OrtaqColors.newIssue))
                   ]))));
   Future<void> refresh() async {
     try {
       final v = await api.request('/snapshot');
       if (mounted && me != null)
-        setState(() => data = Map<String, dynamic>.from(v));
+        setState(() {
+          data = Map<String, dynamic>.from(v);
+          building = Map<String, dynamic>.from(v['building']);
+        });
     } catch (e) {
       if (mounted) setState(() => error = copy('connection'));
     }
@@ -299,54 +380,67 @@ class _WorkspaceState extends State<Workspace> {
         '3d': Icons.view_in_ar_outlined
       }[p] ??
       Icons.circle_outlined;
-  Widget windowMark(
-          {double size = 20, Color color = const Color(0xFFB28D53)}) =>
-      SizedBox(
-          width: size,
-          height: size * 1.25,
-          child: Column(children: [
+  Widget windowMark({double size = 20, Color? color}) {
+    final c = color ?? OrtaqColors.homeGold;
+    return SizedBox(
+        width: size,
+        height: size * 1.25,
+        child: Column(children: [
+          Expanded(
+              child: Row(children: [
             Expanded(
-                child: Row(children: [
-              Expanded(
-                  child:
-                      ColoredBox(color: color, child: const SizedBox.expand())),
-              SizedBox(width: size * .12),
-              Expanded(
-                  child: ColoredBox(
-                      color: color.withValues(alpha: .4),
-                      child: const SizedBox.expand()))
-            ])),
-            SizedBox(height: size * .12),
+                child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        color: c, borderRadius: BorderRadius.circular(3)),
+                    child: SizedBox.expand())),
+            SizedBox(width: size * .14),
             Expanded(
-                child: Row(children: [
-              Expanded(
-                  child: ColoredBox(
-                      color: color.withValues(alpha: .65),
-                      child: const SizedBox.expand())),
-              SizedBox(width: size * .12),
-              Expanded(
-                  child:
-                      ColoredBox(color: color, child: const SizedBox.expand()))
-            ]))
-          ]));
+                child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        color: c.withValues(alpha: .38),
+                        borderRadius: BorderRadius.circular(3)),
+                    child: SizedBox.expand()))
+          ])),
+          SizedBox(height: size * .14),
+          Expanded(
+              child: Row(children: [
+            Expanded(
+                child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        color: c.withValues(alpha: .65),
+                        borderRadius: BorderRadius.circular(3)),
+                    child: SizedBox.expand())),
+            SizedBox(width: size * .14),
+            Expanded(
+                child: DecoratedBox(
+                    decoration: BoxDecoration(
+                        color: c, borderRadius: BorderRadius.circular(3)),
+                    child: SizedBox.expand()))
+          ]))
+        ]));
+  }
   Widget sidebar() => Container(
-      width: 228,
-      color: navy,
+      width: 240,
+      decoration: BoxDecoration(
+          color: OrtaqColors.railBg,
+          border: Border(right: BorderSide(color: OrtaqColors.hairline))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
-            padding: const EdgeInsets.fromLTRB(28, 30, 20, 38),
+            padding: const EdgeInsets.fromLTRB(26, 26, 20, 30),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                windowMark(size: 23, color: const Color(0xFFE1C28D)),
-                const SizedBox(width: 12),
+                windowMark(size: 21, color: OrtaqColors.homeGold),
+                SizedBox(width: 11),
                 text(copy('ui001'),
-                    size: 34, color: Colors.white, weight: FontWeight.w500)
+                    size: 30,
+                    color: OrtaqColors.railInk,
+                    weight: FontWeight.w600)
               ]),
-              const SizedBox(height: 5),
+              SizedBox(height: 6),
               text(copy('ui187'),
                   size: 12,
-                  color: const Color(0xFFB4C4C5),
+                  color: OrtaqColors.railMuted,
                   weight: FontWeight.w600)
             ])),
         Expanded(
@@ -354,70 +448,105 @@ class _WorkspaceState extends State<Workspace> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 children: pages
                     .map((p) => Padding(
-                        padding: const EdgeInsets.only(bottom: 7),
+                        padding: const EdgeInsets.only(bottom: 5),
                         child: ListTile(
+                            dense: true,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4)),
+                                borderRadius: Radii.field),
                             selected: page == p,
-                            selectedTileColor: const Color(0xFF2D4F59),
+                            selectedTileColor: OrtaqColors.railActiveBg,
                             leading: Icon(pageIcon(p),
                                 color: page == p
-                                    ? Colors.white
-                                    : const Color(0xFF9CB5D2),
-                                size: 21),
+                                    ? OrtaqColors.railActiveInk
+                                    : OrtaqColors.railMuted,
+                                size: 20),
                             title: text(s[p] ?? p,
                                 color: page == p
-                                    ? Colors.white
-                                    : const Color(0xFFB9C9DD),
-                                size: 13,
+                                    ? (OrtaqColors.darkRail
+                                        ? OrtaqColors.railInk
+                                        : OrtaqColors.railActiveInk)
+                                    : OrtaqColors.railMuted,
+                                size: 13.5,
                                 weight: page == p
                                     ? FontWeight.w700
-                                    : FontWeight.normal),
+                                    : FontWeight.w500),
                             onTap: () => setState(() => page = p))))
                     .toList())),
         Padding(
             padding: const EdgeInsets.all(24),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              text(copy('ui188'), size: 11, color: const Color(0xFFB4C4C5)),
-              const SizedBox(height: 12),
+              text(copy('ui188'), size: 11, color: OrtaqColors.railMuted),
+              SizedBox(height: 8),
               text(copy('ui189'),
                   size: 12,
-                  color: const Color(0xFF6F8BAD),
+                  color: OrtaqColors.railMuted,
                   weight: FontWeight.w600)
             ]))
       ]));
   Widget topbar() => Container(
-      height: 80,
+      height: 70,
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      color: Colors.white,
+      decoration: BoxDecoration(
+          color: navy,
+          border: Border(bottom: BorderSide(color: OrtaqColors.hairline))),
       child: Row(children: [
         if (!widget.admin)
           Row(children: [
             windowMark(size: 17),
-            const SizedBox(width: 11),
-            text(copy('ui001'), size: 29, weight: FontWeight.w500)
+            SizedBox(width: 10),
+            text(copy('ui001'), size: 26, weight: FontWeight.w600)
           ])
         else
           Expanded(
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                text(building?['name'] ?? copy('ui190'),
-                    weight: FontWeight.w700),
-                text(building?['address'] ?? '', size: 11, color: muted)
-              ])),
+              child: Row(children: [
+            Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                    color: OrtaqColors.actionSoft, borderRadius: Radii.pill),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Container(
+                      width: 7,
+                      height: 7,
+                      decoration: BoxDecoration(
+                          color: OrtaqColors.resolved, shape: BoxShape.circle)),
+                  SizedBox(width: 7),
+                  text('Live workspace',
+                      size: 11.5, color: blue, weight: FontWeight.w700)
+                ])),
+            SizedBox(width: 12),
+            text(building?['address'] ?? building?['name'] ?? copy('ui190'),
+                size: 14.5, weight: FontWeight.w700),
+          ])),
         if (!widget.admin) const Spacer(),
         if (!widget.admin)
-          text(copy('ui191', [me?['apartment']]),
-              size: 12, color: blue, weight: FontWeight.w700),
+          Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                  color: OrtaqColors.homeGoldSoft,
+                  borderRadius: Radii.pill,
+                  border: Border.all(
+                      color: OrtaqColors.homeGold.withValues(alpha: .45))),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                        color: OrtaqColors.homeGold, shape: BoxShape.circle)),
+                SizedBox(width: 6),
+                text(copy('ui191', [me?['apartment']]),
+                    size: 11.5,
+                    color: OrtaqColors.homeGoldText,
+                    weight: FontWeight.w700)
+              ])),
+        SizedBox(width: 6),
         notificationBell(),
-        const SizedBox(width: 6),
+        SizedBox(width: 4),
         if (widget.admin)
           CircleAvatar(
-              backgroundColor: const Color(0xFFE0E8DF),
-              radius: 18,
+              backgroundColor: OrtaqColors.actionSoft,
+              radius: 17,
               child: text(me?['name']?.substring(0, 1) ?? copy('ui192'),
                   color: blue, weight: FontWeight.w700)),
         IconButton(
@@ -428,38 +557,52 @@ class _WorkspaceState extends State<Workspace> {
                 data = {};
                 api.token = '';
                 requested = false;
+                revealed.clear();
+                counted.clear();
                 page = 'home';
                 timer?.cancel();
               });
             },
-            icon: const Icon(Icons.logout, size: 18, color: muted))
+            icon: Icon(Icons.logout, size: 18, color: muted))
       ]));
   Widget residentNav() => Container(
-      color: Colors.white,
-      padding: const EdgeInsets.only(top: 7, bottom: 10),
+      decoration: BoxDecoration(
+          color: navy,
+          border: Border(top: BorderSide(color: OrtaqColors.hairline))),
+      padding: const EdgeInsets.only(top: 7, bottom: 9),
       child: Row(
           children: ['home', 'reports', 'issues', 'announcements']
               .map((p) => Expanded(
                   child: InkWell(
                       onTap: () => setState(() => page = p),
                       child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.symmetric(vertical: 4),
                           child:
                               Column(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(pageIcon(p),
-                                color: page == p ? blue : muted, size: 22),
-                            const SizedBox(height: 4),
+                            Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14, vertical: 4),
+                                decoration: BoxDecoration(
+                                    color: page == p
+                                        ? OrtaqColors.actionSoft
+                                        : Colors.transparent,
+                                    borderRadius: Radii.pill),
+                                child: Icon(pageIcon(p),
+                                    color: page == p ? blue : muted, size: 21)),
+                            SizedBox(height: 3),
                             text(s[p] ?? p,
                                 size: 11,
                                 color: page == p ? blue : muted,
-                                weight: FontWeight.w600)
+                                weight: page == p
+                                    ? FontWeight.w700
+                                    : FontWeight.w500)
                           ])))))
               .toList()));
   @override
   Widget build(BuildContext context) {
     Widget inner;
     if (!prefsReady) {
-      inner = const Center(child: CircularProgressIndicator());
+      inner = const CalmLoading();
     } else if (guide) {
       inner = guideView();
     } else if (me == null) {
@@ -477,14 +620,13 @@ class _WorkspaceState extends State<Workspace> {
                                   children: [
                                     text(copy('ui193'),
                                         size: 48,
-                                        color: Colors.white,
+                                        color: snow,
                                         weight: FontWeight.w700),
-                                    const SizedBox(height: 28),
+                                    SizedBox(height: 28),
                                     text(copy('ui194'),
-                                        size: 16,
-                                        color: const Color(0xFFB4C4C5)),
-                                    const SizedBox(height: 44),
-                                    const SizedBox(
+                                        size: 16, color: OrtaqColors.muted),
+                                    SizedBox(height: 44),
+                                    SizedBox(
                                         height: 230,
                                         width: 400,
                                         child: CustomPaint(
@@ -496,7 +638,10 @@ class _WorkspaceState extends State<Workspace> {
     } else {
       final main = Column(children: [
         topbar(),
-        if (busy) const LinearProgressIndicator(minHeight: 2),
+        CalmSwitcher(
+            child: busy
+                ? const CalmLoading(key: ValueKey('busy'), linear: true)
+                : SizedBox(key: ValueKey('idle'))),
         Expanded(
             child: SingleChildScrollView(
                 padding: EdgeInsets.all(widget.admin ? 32 : 22),
@@ -511,19 +656,26 @@ class _WorkspaceState extends State<Workspace> {
                                 Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: card(Row(children: [
-                                      const Icon(Icons.info_outline,
-                                          color: Colors.red),
-                                      const SizedBox(width: 10),
+                                      Icon(Icons.info_outline,
+                                          color: OrtaqColors.newIssue),
+                                      SizedBox(width: 10),
                                       Expanded(
-                                          child:
-                                              text(error, color: Colors.red)),
+                                          child: text(error,
+                                              color: OrtaqColors.newIssue)),
                                       IconButton(
                                           tooltip: copy('ui196'),
                                           onPressed: () =>
                                               setState(() => error = ''),
-                                          icon: const Icon(Icons.close))
+                                          icon: Icon(Icons.close))
                                     ]))),
-                              content()
+                              CalmSwitcher(
+                                  rise: true,
+                                  child: KeyedSubtree(
+                                      key: ValueKey(
+                                          data.isEmpty ? 'loading' : page),
+                                      child: data.isEmpty
+                                          ? const CalmLoading()
+                                          : content()))
                             ]))))),
         if (!widget.admin) residentNav()
       ]);
@@ -531,6 +683,17 @@ class _WorkspaceState extends State<Workspace> {
           ? Row(children: [sidebar(), Expanded(child: main)])
           : main;
     }
+    inner = CalmSwitcher(
+        duration: CalmMotion.panel,
+        child: KeyedSubtree(
+            key: ValueKey(!prefsReady
+                ? 'loading'
+                : guide
+                    ? 'guide'
+                    : me == null
+                        ? 'login'
+                        : 'workspace'),
+            child: inner));
     return Scaffold(
         body: widget.admin
             ? inner
@@ -543,13 +706,15 @@ class _WorkspaceState extends State<Workspace> {
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(
                         color: paper,
-                        borderRadius: BorderRadius.circular(34),
-                        border: Border.all(color: navy, width: 7),
+                        borderRadius: Radii.card,
+                        border:
+                            Border.all(color: OrtaqColors.hairline, width: 1.5),
                         boxShadow: [
                           BoxShadow(
-                              color: navy.withValues(alpha: .15),
-                              blurRadius: 60,
-                              offset: const Offset(0, 20))
+                              color: const Color(0xFF09212A)
+                                  .withValues(alpha: .10),
+                              blurRadius: 48,
+                              offset: const Offset(0, 16))
                         ]),
                     child: inner)));
   }
